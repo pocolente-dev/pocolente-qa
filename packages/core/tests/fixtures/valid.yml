@@ -1,0 +1,8 @@
+version: 1
+severity_threshold: info
+block_pr_on: warn
+security:
+  secrets:
+    severity: block
+greenops:
+  enabled: false
