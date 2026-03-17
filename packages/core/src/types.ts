@@ -43,5 +43,5 @@ export interface ScanContext {
   parsedASTs?: Map<string, unknown>;
 }
 
-// Forward declaration — full type defined in config.ts
-export type PocolenteConfig = Record<string, unknown>;
+import type { PocolenteConfig } from "./config.js";
+export type { PocolenteConfig };
