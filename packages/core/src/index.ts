@@ -5,3 +5,4 @@ export type { PocolenteConfig } from "./config.js";
 export { loadConfig } from "./loader.js";
 export { filterFindings, deduplicateFindings, computeStatus } from "./severity.js";
 export type { ScanStatus } from "./severity.js";
+export { renderComment } from "./renderer.js";
