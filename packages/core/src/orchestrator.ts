@@ -1,4 +1,5 @@
-import type { Scanner, ScanContext, ScannerResult, Finding } from "./types.js";
+import type { ScanContext, ScannerResult, Finding } from "./types.js";
+import type { Scanner } from "./scanner.js";
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -21,7 +22,7 @@ async function runSingleScanner(
   const start = Date.now();
 
   try {
-    const findings = await withTimeout(
+    const findings = await withTimeout<Finding[]>(
       scanner.scan(context),
       timeoutMs,
       `Scanner "${scanner.name}" timed out after ${timeoutMs}ms`,

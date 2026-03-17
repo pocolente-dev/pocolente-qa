@@ -7,3 +7,4 @@ export { filterFindings, deduplicateFindings, computeStatus } from "./severity.j
 export type { ScanStatus } from "./severity.js";
 export { renderComment } from "./renderer.js";
 export { runScanners } from "./orchestrator.js";
+export { parseDiff } from "./diff.js";
