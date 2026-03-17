@@ -14,10 +14,10 @@ const ScanPathsInputSchema = z.object({
 
 const CoverageInputSchema = z.object({
   enabled: z.boolean().default(true),
-  maxDecreasePercent: z.number().default(2.0),
-  baseCoveragePath: z.string().default(""),
-  prCoveragePath: z.string().default(""),
-  coverageFormat: z.string().default("lcov"),
+  max_decrease_percent: z.number().default(2.0),
+  base_coverage_path: z.string().default(""),
+  pr_coverage_path: z.string().default(""),
+  coverage_format: z.string().default("lcov"),
 });
 
 const DeadCodeInputSchema = z.object({
@@ -33,30 +33,30 @@ const BehavioralDriftInputSchema = z.object({
 const GenerationQualityInputSchema = z.object({
   enabled: z.boolean().default(true),
   severity: SeveritySchema.default("warn"),
-  llmEnhanced: z.boolean().default(false),
-  llmProvider: z.string().default("anthropic"),
+  llm_enhanced: z.boolean().default(false),
+  llm_provider: z.string().default("anthropic"),
 });
 
 const DependenciesInputSchema = z.object({
   enabled: z.boolean().default(true),
   severity: SeveritySchema.default("warn"),
-  maxAgeDays: z.number().default(730),
-  blockOnCriticalCve: z.boolean().default(true),
+  max_age_days: z.number().default(730),
+  block_on_critical_cve: z.boolean().default(true),
 });
 
 const CorrectnessInputSchema = z.object({
   enabled: z.boolean().default(true),
   coverage: CoverageInputSchema.default({}),
-  deadCode: DeadCodeInputSchema.default({}),
-  behavioralDrift: BehavioralDriftInputSchema.default({}),
-  generationQuality: GenerationQualityInputSchema.default({}),
+  dead_code: DeadCodeInputSchema.default({}),
+  behavioral_drift: BehavioralDriftInputSchema.default({}),
+  generation_quality: GenerationQualityInputSchema.default({}),
   dependencies: DependenciesInputSchema.default({}),
 });
 
 const SecretsInputSchema = z.object({
   enabled: z.boolean().default(true),
   severity: SeveritySchema.default("block"),
-  customPatterns: z.array(z.string()).default([]),
+  custom_patterns: z.array(z.string()).default([]),
   allowlist: z.array(z.string()).default([]),
 });
 
@@ -68,7 +68,7 @@ const OwaspInputSchema = z.object({
 const SupplyChainInputSchema = z.object({
   enabled: z.boolean().default(true),
   severity: SeveritySchema.default("warn"),
-  blockOnInstallScripts: z.boolean().default(false),
+  block_on_install_scripts: z.boolean().default(false),
 });
 
 const EuComplianceInputSchema = z.object({
@@ -79,8 +79,8 @@ const SecurityInputSchema = z.object({
   enabled: z.boolean().default(true),
   secrets: SecretsInputSchema.default({}),
   owasp: OwaspInputSchema.default({}),
-  supplyChain: SupplyChainInputSchema.default({}),
-  euCompliance: EuComplianceInputSchema.default({}),
+  supply_chain: SupplyChainInputSchema.default({}),
+  eu_compliance: EuComplianceInputSchema.default({}),
 });
 
 const ComplexityInputSchema = z.object({
@@ -96,14 +96,14 @@ const ResourcesInputSchema = z.object({
 const InfrastructureInputSchema = z.object({
   enabled: z.boolean().default(true),
   severity: SeveritySchema.default("warn"),
-  maxBaseImageMb: z.number().default(200),
+  max_base_image_mb: z.number().default(200),
 });
 
 const RcsInputSchema = z.object({
   enabled: z.boolean().default(true),
   severity: SeveritySchema.default("info"),
-  trendBadge: z.boolean().default(true),
-  degradationThreshold: z.number().default(5),
+  trend_badge: z.boolean().default(true),
+  degradation_threshold: z.number().default(5),
 });
 
 const GreenopsInputSchema = z.object({
@@ -116,16 +116,16 @@ const GreenopsInputSchema = z.object({
 
 const RuntimeProfilingInputSchema = z.object({
   enabled: z.boolean().default(false),
-  testCommand: z.string().default("npm test"),
-  warnOnCpuIncreasePercent: z.number().default(20),
-  warnOnMemoryIncreasePercent: z.number().default(25),
+  test_command: z.string().default("npm test"),
+  warn_on_cpu_increase_percent: z.number().default(20),
+  warn_on_memory_increase_percent: z.number().default(25),
 });
 
 const ReportingInputSchema = z.object({
-  dashboardUrl: z.string().default(""),
-  dashboardApiKey: z.string().default(""),
-  sarifOutput: z.boolean().default(false),
-  jsonOutput: z.boolean().default(false),
+  dashboard_url: z.string().default(""),
+  dashboard_api_key: z.string().default(""),
+  sarif_output: z.boolean().default(false),
+  json_output: z.boolean().default(false),
 });
 
 const RawConfigSchema = z.object({
@@ -266,30 +266,30 @@ function parseConfigFromParsed(
       enabled: parsed.correctness.enabled,
       coverage: {
         enabled: parsed.correctness.coverage.enabled,
-        maxDecreasePercent: parsed.correctness.coverage.maxDecreasePercent,
-        baseCoveragePath: parsed.correctness.coverage.baseCoveragePath,
-        prCoveragePath: parsed.correctness.coverage.prCoveragePath,
-        coverageFormat: parsed.correctness.coverage.coverageFormat,
+        maxDecreasePercent: parsed.correctness.coverage.max_decrease_percent,
+        baseCoveragePath: parsed.correctness.coverage.base_coverage_path,
+        prCoveragePath: parsed.correctness.coverage.pr_coverage_path,
+        coverageFormat: parsed.correctness.coverage.coverage_format,
       },
       deadCode: {
-        enabled: parsed.correctness.deadCode.enabled,
-        severity: parsed.correctness.deadCode.severity,
+        enabled: parsed.correctness.dead_code.enabled,
+        severity: parsed.correctness.dead_code.severity,
       },
       behavioralDrift: {
-        enabled: parsed.correctness.behavioralDrift.enabled,
-        severity: parsed.correctness.behavioralDrift.severity,
+        enabled: parsed.correctness.behavioral_drift.enabled,
+        severity: parsed.correctness.behavioral_drift.severity,
       },
       generationQuality: {
-        enabled: parsed.correctness.generationQuality.enabled,
-        severity: parsed.correctness.generationQuality.severity,
-        llmEnhanced: parsed.correctness.generationQuality.llmEnhanced,
-        llmProvider: parsed.correctness.generationQuality.llmProvider,
+        enabled: parsed.correctness.generation_quality.enabled,
+        severity: parsed.correctness.generation_quality.severity,
+        llmEnhanced: parsed.correctness.generation_quality.llm_enhanced,
+        llmProvider: parsed.correctness.generation_quality.llm_provider,
       },
       dependencies: {
         enabled: parsed.correctness.dependencies.enabled,
         severity: parsed.correctness.dependencies.severity,
-        maxAgeDays: parsed.correctness.dependencies.maxAgeDays,
-        blockOnCriticalCve: parsed.correctness.dependencies.blockOnCriticalCve,
+        maxAgeDays: parsed.correctness.dependencies.max_age_days,
+        blockOnCriticalCve: parsed.correctness.dependencies.block_on_critical_cve,
       },
     },
     security: {
@@ -297,7 +297,7 @@ function parseConfigFromParsed(
       secrets: {
         enabled: parsed.security.secrets.enabled,
         severity: parsed.security.secrets.severity,
-        customPatterns: parsed.security.secrets.customPatterns,
+        customPatterns: parsed.security.secrets.custom_patterns,
         allowlist: parsed.security.secrets.allowlist,
       },
       owasp: {
@@ -305,12 +305,12 @@ function parseConfigFromParsed(
         severity: parsed.security.owasp.severity,
       },
       supplyChain: {
-        enabled: parsed.security.supplyChain.enabled,
-        severity: parsed.security.supplyChain.severity,
-        blockOnInstallScripts: parsed.security.supplyChain.blockOnInstallScripts,
+        enabled: parsed.security.supply_chain.enabled,
+        severity: parsed.security.supply_chain.severity,
+        blockOnInstallScripts: parsed.security.supply_chain.block_on_install_scripts,
       },
       euCompliance: {
-        enabled: parsed.security.euCompliance.enabled,
+        enabled: parsed.security.eu_compliance.enabled,
       },
     },
     greenops: {
@@ -326,26 +326,26 @@ function parseConfigFromParsed(
       infrastructure: {
         enabled: parsed.greenops.infrastructure.enabled,
         severity: parsed.greenops.infrastructure.severity,
-        maxBaseImageMb: parsed.greenops.infrastructure.maxBaseImageMb,
+        maxBaseImageMb: parsed.greenops.infrastructure.max_base_image_mb,
       },
       rcs: {
         enabled: parsed.greenops.rcs.enabled,
         severity: parsed.greenops.rcs.severity,
-        trendBadge: parsed.greenops.rcs.trendBadge,
-        degradationThreshold: parsed.greenops.rcs.degradationThreshold,
+        trendBadge: parsed.greenops.rcs.trend_badge,
+        degradationThreshold: parsed.greenops.rcs.degradation_threshold,
       },
     },
     runtimeProfiling: {
       enabled: runtimeProfilingEnabled,
-      testCommand: parsed.runtime_profiling.testCommand,
-      warnOnCpuIncreasePercent: parsed.runtime_profiling.warnOnCpuIncreasePercent,
-      warnOnMemoryIncreasePercent: parsed.runtime_profiling.warnOnMemoryIncreasePercent,
+      testCommand: parsed.runtime_profiling.test_command,
+      warnOnCpuIncreasePercent: parsed.runtime_profiling.warn_on_cpu_increase_percent,
+      warnOnMemoryIncreasePercent: parsed.runtime_profiling.warn_on_memory_increase_percent,
     },
     reporting: {
-      dashboardUrl: parsed.reporting.dashboardUrl,
-      dashboardApiKey: parsed.reporting.dashboardApiKey,
-      sarifOutput: parsed.reporting.sarifOutput,
-      jsonOutput: parsed.reporting.jsonOutput,
+      dashboardUrl: parsed.reporting.dashboard_url,
+      dashboardApiKey: parsed.reporting.dashboard_api_key,
+      sarifOutput: parsed.reporting.sarif_output,
+      jsonOutput: parsed.reporting.json_output,
     },
     warnings,
   };

@@ -2,7 +2,7 @@
   "name": "@pocolente/github-action",
   "version": "0.0.1",
   "type": "module",
-  "scripts": { "build": "npx esbuild src/main.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/index.js" },
+  "scripts": { "build": "npx esbuild src/main.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/index.js --banner:js=\"import{createRequire}from'module';const require=createRequire(import.meta.url);\"" },
   "dependencies": {
     "@pocolente/core": "workspace:*",
     "@pocolente/scanner-security": "workspace:*",
