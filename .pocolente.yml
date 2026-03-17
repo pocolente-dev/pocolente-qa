@@ -1,0 +1,9 @@
+version: 1
+severity_threshold: warn
+block_pr_on: block
+scan_paths:
+  include: ["packages/**"]
+  exclude: ["**/*.test.*", "**/fixtures/**", "**/dist/**"]
+security:
+  secrets:
+    severity: block
