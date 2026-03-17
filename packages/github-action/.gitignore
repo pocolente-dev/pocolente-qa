@@ -1,0 +1,3 @@
+# Un-ignore dist for GitHub Actions (runner needs the bundled file)
+!dist/
+!dist/**
