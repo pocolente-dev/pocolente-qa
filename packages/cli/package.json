@@ -1,0 +1,13 @@
+{
+  "name": "@pocolente/cli",
+  "version": "0.0.1",
+  "type": "module",
+  "bin": { "pocolente": "dist/main.js" },
+  "files": ["dist"],
+  "scripts": { "build": "tsup", "test": "vitest run" },
+  "dependencies": {
+    "@pocolente/core": "workspace:*",
+    "@pocolente/scanner-security": "workspace:*",
+    "simple-git": "^3.27.0"
+  }
+}
