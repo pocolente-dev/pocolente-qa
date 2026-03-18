@@ -23,6 +23,9 @@ importers:
       '@pocolente/core':
         specifier: workspace:*
         version: link:../core
+      '@pocolente/scanner-correctness':
+        specifier: workspace:*
+        version: link:../scanner-correctness
       '@pocolente/scanner-security':
         specifier: workspace:*
         version: link:../scanner-security
@@ -50,6 +53,9 @@ importers:
       '@pocolente/core':
         specifier: workspace:*
         version: link:../core
+      '@pocolente/scanner-correctness':
+        specifier: workspace:*
+        version: link:../scanner-correctness
       '@pocolente/scanner-security':
         specifier: workspace:*
         version: link:../scanner-security

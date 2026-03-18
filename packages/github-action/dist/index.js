@@ -41797,6 +41797,678 @@ function mapOsvSeverity(osvSeverity, defaultSeverity) {
   if (normalized === "LOW") return "info";
   return defaultSeverity;
 }
+var YAML_EXTENSIONS = /\.(ya?ml)$/i;
+var DOCKERFILE_PATTERN = /(^|[\\/])Dockerfile[^/\\]*$/i;
+function isYamlFile(path) {
+  return YAML_EXTENSIONS.test(path);
+}
+function isDockerfile(path) {
+  return DOCKERFILE_PATTERN.test(path);
+}
+var PermissionsScanner = class {
+  id = "permissions-scanner";
+  name = "Permission & Scope Analyzer";
+  layer = "security";
+  async scan(context2) {
+    const findings = [];
+    for (const file of context2.diff) {
+      if (isYamlFile(file.path)) {
+        findings.push(...this.scanYaml(file.path, file.added));
+      } else if (isDockerfile(file.path)) {
+        findings.push(...this.scanDockerfile(file.path, file.added));
+      }
+    }
+    return findings;
+  }
+  scanYaml(filePath, addedLines) {
+    const findings = [];
+    for (let i = 0; i < addedLines.length; i++) {
+      const line = addedLines[i];
+      const lineNum = String(i + 1);
+      if (/resources\s*:\s*\[?\s*["']?\*["']?\s*\]?/.test(line)) {
+        findings.push({
+          layer: "security",
+          scanner: this.id,
+          severity: "warn",
+          confidence: 0.9,
+          file: filePath,
+          line: lineNum,
+          title: "Wildcard resource permissions in K8s RBAC",
+          explanation: 'Using `resources: ["*"]` grants access to all resource types. Prefer explicit resource names.',
+          suggestion: "Replace wildcard resources with explicit resource names.",
+          cwe: "CWE-250",
+          owasp: "A01:2021",
+          estimatedEnergyImpact: null,
+          rcsDelta: null
+        });
+      }
+      if (/verbs\s*:\s*\[?\s*["']?\*["']?\s*\]?/.test(line)) {
+        findings.push({
+          layer: "security",
+          scanner: this.id,
+          severity: "warn",
+          confidence: 0.9,
+          file: filePath,
+          line: lineNum,
+          title: "Wildcard verb permissions in K8s RBAC",
+          explanation: 'Using `verbs: ["*"]` grants all operations. Prefer explicit verbs.',
+          suggestion: "Replace wildcard verbs with explicit verbs (e.g., get, list, watch).",
+          cwe: "CWE-250",
+          owasp: "A01:2021",
+          estimatedEnergyImpact: null,
+          rcsDelta: null
+        });
+      }
+      if (/runAsUser\s*:\s*0\b/.test(line)) {
+        findings.push({
+          layer: "security",
+          scanner: this.id,
+          severity: "warn",
+          confidence: 0.95,
+          file: filePath,
+          line: lineNum,
+          title: "Container running as root user (runAsUser: 0)",
+          explanation: "Setting `runAsUser: 0` runs the container process as root, increasing blast radius.",
+          suggestion: "Use a non-root UID (e.g., runAsUser: 1000) and set runAsNonRoot: true.",
+          cwe: "CWE-250",
+          owasp: "A05:2021",
+          estimatedEnergyImpact: null,
+          rcsDelta: null
+        });
+      }
+      if (/runAsNonRoot\s*:\s*false/.test(line)) {
+        findings.push({
+          layer: "security",
+          scanner: this.id,
+          severity: "warn",
+          confidence: 0.85,
+          file: filePath,
+          line: lineNum,
+          title: "Container allows root execution (runAsNonRoot: false)",
+          explanation: "Setting `runAsNonRoot: false` allows the container to run as root.",
+          suggestion: "Set runAsNonRoot: true to prevent root container execution.",
+          cwe: "CWE-250",
+          owasp: "A05:2021",
+          estimatedEnergyImpact: null,
+          rcsDelta: null
+        });
+      }
+    }
+    return findings;
+  }
+  scanDockerfile(filePath, addedLines) {
+    const findings = [];
+    let lastUserLine = null;
+    let hasUserDirective = false;
+    for (let i = 0; i < addedLines.length; i++) {
+      const line = addedLines[i].trim();
+      const userMatch = /^USER\s+(\S+)/i.exec(line);
+      if (userMatch) {
+        hasUserDirective = true;
+        lastUserLine = { value: userMatch[1], lineNum: i + 1 };
+      }
+    }
+    if (!hasUserDirective) {
+      findings.push({
+        layer: "security",
+        scanner: this.id,
+        severity: "warn",
+        confidence: 0.8,
+        file: filePath,
+        line: "1",
+        title: "Dockerfile has no USER directive \u2014 defaults to root",
+        explanation: "Without a USER instruction, Docker runs the container as root by default.",
+        suggestion: "Add a non-root USER instruction (e.g., USER node or USER 1000).",
+        cwe: "CWE-250",
+        owasp: "A05:2021",
+        estimatedEnergyImpact: null,
+        rcsDelta: null
+      });
+    } else if (lastUserLine) {
+      const user = lastUserLine.value.toLowerCase();
+      if (user === "root" || user === "0") {
+        findings.push({
+          layer: "security",
+          scanner: this.id,
+          severity: "warn",
+          confidence: 0.95,
+          file: filePath,
+          line: String(lastUserLine.lineNum),
+          title: "Dockerfile final USER directive sets root",
+          explanation: `The last USER directive sets the user to "${lastUserLine.value}", running the container as root.`,
+          suggestion: "Switch to a non-root user at the end of the Dockerfile (e.g., USER node).",
+          cwe: "CWE-250",
+          owasp: "A05:2021",
+          estimatedEnergyImpact: null,
+          rcsDelta: null
+        });
+      }
+    }
+    return findings;
+  }
+};
+
+// ../scanner-correctness/dist/index.js
+import { readFile as readFile2 } from "fs/promises";
+import { join } from "path";
+import { readFile as readFile22 } from "fs/promises";
+import { join as join2, isAbsolute } from "path";
+var TS_JS_EXT = /\.(ts|tsx|js|jsx|mjs|cjs)$/i;
+var TEST_FILE = /(\.(test|spec)\.[a-z]+$)|([\\/]__tests__[\\/])/i;
+var EMPTY_CATCH_RE = /catch\s*\([^)]*\)\s*\{\s*\}/;
+var CONSOLE_RE = /console\.(log|debug|info)\s*\(/;
+var TODO_BARE_RE = /\b(TODO|FIXME|HACK)\b(?!\s*\((?:#\d+|\w+-\d+|@\w+)\))/;
+var GenerationQualityScanner = class {
+  id = "generation-quality-scanner";
+  name = "Generation Quality Scanner";
+  layer = "correctness";
+  async scan(context2) {
+    const cfg = context2.config.correctness.generationQuality;
+    if (!cfg.enabled) {
+      return [];
+    }
+    const severity = cfg.severity;
+    const findings = [];
+    for (const file of context2.diff) {
+      if (!TS_JS_EXT.test(file.path)) continue;
+      const isTestFile = TEST_FILE.test(file.path);
+      for (let i = 0; i < file.added.length; i++) {
+        const line = file.added[i];
+        const lineNum = String(i + 1);
+        if (EMPTY_CATCH_RE.test(line)) {
+          findings.push({
+            layer: "correctness",
+            scanner: this.id,
+            severity,
+            confidence: 0.9,
+            file: file.path,
+            line: lineNum,
+            title: "Empty catch block detected",
+            explanation: "An empty catch block silently swallows exceptions, making debugging extremely difficult and hiding runtime errors.",
+            suggestion: "Handle the error explicitly: log it, re-throw it, or return an appropriate error response.",
+            cwe: "CWE-390",
+            owasp: null,
+            estimatedEnergyImpact: null,
+            rcsDelta: null
+          });
+        }
+        if (!isTestFile && CONSOLE_RE.test(line)) {
+          findings.push({
+            layer: "correctness",
+            scanner: this.id,
+            severity,
+            confidence: 0.85,
+            file: file.path,
+            line: lineNum,
+            title: "Console statement in production code",
+            explanation: "console.log/debug/info statements left in production code can leak sensitive data and pollute logs.",
+            suggestion: "Remove the console statement or replace it with a structured logger (e.g. pino, winston).",
+            cwe: null,
+            owasp: null,
+            estimatedEnergyImpact: null,
+            rcsDelta: null
+          });
+        }
+        if (TODO_BARE_RE.test(line)) {
+          findings.push({
+            layer: "correctness",
+            scanner: this.id,
+            severity,
+            confidence: 0.8,
+            file: file.path,
+            line: lineNum,
+            title: "TODO without issue tracker link",
+            explanation: "A TODO/FIXME/HACK comment was found without a linked issue (e.g. #123 or PROJ-456). Untracked TODOs often get forgotten.",
+            suggestion: "Link the comment to an issue tracker item: // TODO(#123): description",
+            cwe: null,
+            owasp: null,
+            estimatedEnergyImpact: null,
+            rcsDelta: null
+          });
+        }
+      }
+    }
+    return findings;
+  }
+};
+var TS_JS_EXT2 = /\.(ts|tsx|js|jsx|mjs|cjs)$/i;
+var NAMED_IMPORT_RE = /import\s*\{([^}]+)\}\s*from\s*/;
+var DEFAULT_IMPORT_RE = /import\s+(\w+)\s+from\s+/;
+var RETURN_THROW_RE = /^(\s*)(return|throw)\b/;
+var NON_EXECUTABLE_RE = /^\s*(\}|catch\s*[\w(]|finally\s*\{|else\s*[\w{]|\/\/|\/\*|\*)/;
+function extractImportedNames(line) {
+  const names = [];
+  const namedMatch = NAMED_IMPORT_RE.exec(line);
+  if (namedMatch) {
+    const parts = namedMatch[1].split(",");
+    for (const part of parts) {
+      const trimmed2 = part.trim();
+      const asMatch = /(\w+)\s+as\s+(\w+)/.exec(trimmed2);
+      if (asMatch) {
+        names.push(asMatch[2]);
+      } else if (/^\w+$/.test(trimmed2)) {
+        names.push(trimmed2);
+      }
+    }
+  }
+  if (names.length === 0) {
+    const defaultMatch = DEFAULT_IMPORT_RE.exec(line);
+    if (defaultMatch) {
+      names.push(defaultMatch[1]);
+    }
+  }
+  return names;
+}
+function isNameUsed(name, lines, importLineIndex) {
+  const wordBoundary = new RegExp(`\\b${escapeRegex(name)}\\b`);
+  for (let i = 0; i < lines.length; i++) {
+    if (i === importLineIndex) continue;
+    if (wordBoundary.test(lines[i])) return true;
+  }
+  return false;
+}
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+function findUnreachableLines(lines) {
+  const unreachable = [];
+  for (let i = 0; i < lines.length - 1; i++) {
+    const match = RETURN_THROW_RE.exec(lines[i]);
+    if (!match) continue;
+    const indent = match[1].length;
+    for (let j = i + 1; j < lines.length; j++) {
+      const nextLine = lines[j];
+      const trimmed2 = nextLine.trim();
+      if (trimmed2 === "") continue;
+      const nextIndent = nextLine.length - nextLine.trimStart().length;
+      if (nextIndent < indent) break;
+      if (NON_EXECUTABLE_RE.test(nextLine)) break;
+      unreachable.push({ lineIndex: j });
+      break;
+    }
+  }
+  return unreachable;
+}
+var DeadCodeScanner = class {
+  id = "dead-code-scanner";
+  name = "Dead Code Detector";
+  layer = "correctness";
+  async scan(context2) {
+    const cfg = context2.config.correctness.deadCode;
+    if (!cfg.enabled) {
+      return [];
+    }
+    const severity = cfg.severity;
+    const findings = [];
+    for (const file of context2.diff) {
+      if (!TS_JS_EXT2.test(file.path)) continue;
+      const fullPath = join(context2.repoRoot, file.path);
+      let content;
+      try {
+        content = await readFile2(fullPath, "utf8");
+      } catch {
+        continue;
+      }
+      const lines = content.split("\n");
+      const addedSet = new Set(file.added.filter((l) => l.trim() !== ""));
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.trim().startsWith("import")) continue;
+        if (!addedSet.has(line.trim()) && !addedSet.has(line)) continue;
+        const importedNames = extractImportedNames(line);
+        for (const name of importedNames) {
+          if (!isNameUsed(name, lines, i)) {
+            findings.push({
+              layer: "correctness",
+              scanner: this.id,
+              severity,
+              confidence: 0.85,
+              file: file.path,
+              line: String(i + 1),
+              title: `Unused import: "${name}"`,
+              explanation: `The imported name "${name}" is never referenced in this file.`,
+              suggestion: `Remove the unused import "${name}" to keep the code clean.`,
+              cwe: null,
+              owasp: null,
+              estimatedEnergyImpact: null,
+              rcsDelta: null
+            });
+          }
+        }
+      }
+      const unreachableLines = findUnreachableLines(lines);
+      for (const { lineIndex } of unreachableLines) {
+        const lineContent = lines[lineIndex];
+        if (!addedSet.has(lineContent.trim()) && !addedSet.has(lineContent)) {
+          continue;
+        }
+        findings.push({
+          layer: "correctness",
+          scanner: this.id,
+          severity,
+          confidence: 0.9,
+          file: file.path,
+          line: String(lineIndex + 1),
+          title: "Unreachable code detected",
+          explanation: "Code after a return or throw statement will never execute.",
+          suggestion: "Remove the unreachable code or restructure the logic.",
+          cwe: null,
+          owasp: null,
+          estimatedEnergyImpact: null,
+          rcsDelta: null
+        });
+      }
+    }
+    return findings;
+  }
+};
+var TS_JS_EXT3 = /\.(ts|tsx|js|jsx|mjs|cjs)$/i;
+var EXPORT_FUNCTION_RE = /^\s*export\s+(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)/;
+var EXPORT_CLASS_RE = /^\s*export\s+(?:abstract\s+)?class\s+(\w+)/;
+var EXPORT_VAR_RE = /^\s*export\s+(?:const|let|var|type|interface)\s+(\w+)/;
+var EXPORT_DEFAULT_FUNC_RE = /^\s*export\s+default\s+(?:async\s+)?function\s*(\w*)\s*\(([^)]*)\)/;
+var EXPORT_DEFAULT_CLASS_RE = /^\s*export\s+default\s+(?:abstract\s+)?class\s+(\w*)/;
+var EXPORT_BRACE_RE = /^\s*export\s*\{([^}]+)\}/;
+function countParams(paramStr) {
+  if (paramStr.trim() === "") return 0;
+  let depth = 0;
+  let count = 1;
+  for (const ch of paramStr) {
+    if (ch === "(" || ch === "<" || ch === "[" || ch === "{") depth++;
+    else if (ch === ")" || ch === ">" || ch === "]" || ch === "}") depth--;
+    else if (ch === "," && depth === 0) count++;
+  }
+  return count;
+}
+function parseExports(lines) {
+  const exports = [];
+  for (const line of lines) {
+    const fnMatch = EXPORT_FUNCTION_RE.exec(line);
+    if (fnMatch) {
+      exports.push({
+        name: fnMatch[1],
+        kind: "function",
+        paramCount: countParams(fnMatch[2]),
+        rawParams: fnMatch[2]
+      });
+      continue;
+    }
+    const defaultFnMatch = EXPORT_DEFAULT_FUNC_RE.exec(line);
+    if (defaultFnMatch) {
+      exports.push({
+        name: defaultFnMatch[1] || "default",
+        kind: "function",
+        paramCount: countParams(defaultFnMatch[2]),
+        rawParams: defaultFnMatch[2]
+      });
+      continue;
+    }
+    const classMatch = EXPORT_CLASS_RE.exec(line);
+    if (classMatch) {
+      exports.push({
+        name: classMatch[1],
+        kind: "class",
+        paramCount: null,
+        rawParams: null
+      });
+      continue;
+    }
+    const defaultClassMatch = EXPORT_DEFAULT_CLASS_RE.exec(line);
+    if (defaultClassMatch) {
+      exports.push({
+        name: defaultClassMatch[1] || "default",
+        kind: "class",
+        paramCount: null,
+        rawParams: null
+      });
+      continue;
+    }
+    const varMatch = EXPORT_VAR_RE.exec(line);
+    if (varMatch) {
+      exports.push({
+        name: varMatch[1],
+        kind: "variable",
+        paramCount: null,
+        rawParams: null
+      });
+      continue;
+    }
+    const braceMatch = EXPORT_BRACE_RE.exec(line);
+    if (braceMatch) {
+      const names = braceMatch[1].split(",").map((s) => s.trim().split(/\s+as\s+/).pop().trim()).filter(Boolean);
+      for (const name of names) {
+        exports.push({
+          name,
+          kind: "named-list",
+          paramCount: null,
+          rawParams: null
+        });
+      }
+    }
+  }
+  return exports;
+}
+var BehavioralDriftScanner = class {
+  id = "behavioral-drift-scanner";
+  name = "Behavioral Drift Analyzer";
+  layer = "correctness";
+  async scan(context2) {
+    const cfg = context2.config.correctness.behavioralDrift;
+    if (!cfg.enabled) {
+      return [];
+    }
+    const blockSeverity = cfg.severity;
+    const findings = [];
+    for (const file of context2.diff) {
+      if (!TS_JS_EXT3.test(file.path)) continue;
+      const removedExports = parseExports(file.removed);
+      const addedExports = parseExports(file.added);
+      const addedByName = /* @__PURE__ */ new Map();
+      for (const exp of addedExports) {
+        addedByName.set(exp.name, exp);
+      }
+      for (const removed of removedExports) {
+        const added = addedByName.get(removed.name);
+        if (!added) {
+          findings.push({
+            layer: "correctness",
+            scanner: this.id,
+            severity: blockSeverity,
+            confidence: 0.95,
+            file: file.path,
+            line: "0",
+            title: `Removed export: "${removed.name}"`,
+            explanation: `The exported symbol "${removed.name}" was removed. This is a breaking change for consumers.`,
+            suggestion: `Restore the export or mark it as deprecated before removal.`,
+            cwe: null,
+            owasp: null,
+            estimatedEnergyImpact: null,
+            rcsDelta: null
+          });
+        } else if (removed.kind === "function" && added.kind === "function" && removed.paramCount !== null && added.paramCount !== null) {
+          if (added.paramCount < removed.paramCount) {
+            findings.push({
+              layer: "correctness",
+              scanner: this.id,
+              severity: blockSeverity,
+              confidence: 0.9,
+              file: file.path,
+              line: "0",
+              title: `Parameter removed from export: "${removed.name}"`,
+              explanation: `"${removed.name}" had ${removed.paramCount} parameter(s) but now has ${added.paramCount}. Removing parameters is a breaking change.`,
+              suggestion: `Keep the old parameter signature and add overloads or optional parameters instead.`,
+              cwe: null,
+              owasp: null,
+              estimatedEnergyImpact: null,
+              rcsDelta: null
+            });
+          } else if (added.paramCount > removed.paramCount) {
+            findings.push({
+              layer: "correctness",
+              scanner: this.id,
+              severity: "warn",
+              confidence: 0.8,
+              file: file.path,
+              line: "0",
+              title: `Parameter added to export: "${removed.name}"`,
+              explanation: `"${removed.name}" had ${removed.paramCount} parameter(s) but now has ${added.paramCount}. Adding required parameters can break callers.`,
+              suggestion: `Ensure the new parameter is optional (e.g. "param?: Type") to avoid breaking existing callers.`,
+              cwe: null,
+              owasp: null,
+              estimatedEnergyImpact: null,
+              rcsDelta: null
+            });
+          }
+        }
+      }
+    }
+    return findings;
+  }
+};
+function parseLcov(content) {
+  if (!content.trim()) return [];
+  const results = [];
+  const lines = content.split("\n");
+  let currentFile = null;
+  let totalLines = 0;
+  let coveredLines = 0;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (line.startsWith("SF:")) {
+      currentFile = line.slice(3);
+      totalLines = 0;
+      coveredLines = 0;
+    } else if (line.startsWith("LF:")) {
+      const n = parseInt(line.slice(3), 10);
+      totalLines = isNaN(n) ? 0 : n;
+    } else if (line.startsWith("LH:")) {
+      const n = parseInt(line.slice(3), 10);
+      coveredLines = isNaN(n) ? 0 : n;
+    } else if (line === "end_of_record") {
+      if (currentFile !== null) {
+        results.push({ file: currentFile, totalLines, coveredLines });
+        currentFile = null;
+        totalLines = 0;
+        coveredLines = 0;
+      }
+    }
+  }
+  return results;
+}
+function computePercent(reports) {
+  const totalLines = reports.reduce((sum, r) => sum + r.totalLines, 0);
+  const coveredLines = reports.reduce((sum, r) => sum + r.coveredLines, 0);
+  if (totalLines === 0) return 0;
+  return coveredLines / totalLines * 100;
+}
+function filePercent(f) {
+  if (f.totalLines === 0) return 0;
+  return f.coveredLines / f.totalLines * 100;
+}
+function computeCoverageDelta(base, pr) {
+  if (base.length === 0 && pr.length === 0) {
+    return { overallDelta: 0, perFile: [] };
+  }
+  const overallBase = computePercent(base);
+  const overallPr = computePercent(pr);
+  const overallDelta = overallPr - overallBase;
+  const baseMap = new Map(base.map((f) => [f.file, f]));
+  const prMap = new Map(pr.map((f) => [f.file, f]));
+  const perFile = [];
+  for (const [file, baseEntry] of baseMap) {
+    const prEntry = prMap.get(file);
+    if (prEntry) {
+      const delta = filePercent(prEntry) - filePercent(baseEntry);
+      perFile.push({ file, delta });
+    }
+  }
+  for (const [file, prEntry] of prMap) {
+    if (!baseMap.has(file)) {
+      perFile.push({ file, delta: filePercent(prEntry) });
+    }
+  }
+  return { overallDelta, perFile };
+}
+var DEFAULT_BASE_PATH = "coverage/base-lcov.info";
+var DEFAULT_PR_PATH = "coverage/pr-lcov.info";
+function resolveCoveragePath(repoRoot, configPath, fallback) {
+  const p = configPath.trim() || fallback;
+  return isAbsolute(p) ? p : join2(repoRoot, p);
+}
+async function readCoverageFile(filePath) {
+  try {
+    return await readFile22(filePath, "utf8");
+  } catch {
+    return null;
+  }
+}
+function parseReport(content, format) {
+  switch (format) {
+    case "lcov":
+    default:
+      return parseLcov(content);
+  }
+}
+var CoverageDeltaScanner = class {
+  id = "coverage-delta-scanner";
+  name = "Test Coverage Delta Scanner";
+  layer = "correctness";
+  async scan(context2) {
+    const cfg = context2.config.correctness.coverage;
+    if (!cfg.enabled) {
+      return [];
+    }
+    const basePath = resolveCoveragePath(context2.repoRoot, cfg.baseCoveragePath, DEFAULT_BASE_PATH);
+    const prPath = resolveCoveragePath(context2.repoRoot, cfg.prCoveragePath, DEFAULT_PR_PATH);
+    const [baseContent, prContent] = await Promise.all([
+      readCoverageFile(basePath),
+      readCoverageFile(prPath)
+    ]);
+    if (baseContent === null || prContent === null) {
+      return [
+        {
+          layer: "correctness",
+          scanner: this.id,
+          severity: "info",
+          confidence: 1,
+          file: "",
+          line: "",
+          title: "Coverage reports not found, skipping",
+          explanation: `One or both coverage report files could not be read. Expected base at "${basePath}" and PR at "${prPath}".`,
+          suggestion: "Ensure coverage reports are generated before running the scanner. Configure correctness.coverage.baseCoveragePath and prCoveragePath if needed.",
+          cwe: null,
+          owasp: null,
+          estimatedEnergyImpact: null,
+          rcsDelta: null
+        }
+      ];
+    }
+    const format = cfg.coverageFormat || "lcov";
+    const baseReport = parseReport(baseContent, format);
+    const prReport = parseReport(prContent, format);
+    const delta = computeCoverageDelta(baseReport, prReport);
+    const findings = [];
+    if (delta.overallDelta < 0 && Math.abs(delta.overallDelta) > cfg.maxDecreasePercent) {
+      const decrease = Math.abs(delta.overallDelta).toFixed(2);
+      findings.push({
+        layer: "correctness",
+        scanner: this.id,
+        severity: "warn",
+        confidence: 1,
+        file: "",
+        line: "",
+        title: `Coverage decreased by ${decrease}%`,
+        explanation: `Overall test coverage dropped by ${decrease}%, which exceeds the allowed maximum decrease of ${cfg.maxDecreasePercent}%.`,
+        suggestion: "Add or fix tests to restore coverage before merging this PR.",
+        cwe: null,
+        owasp: null,
+        estimatedEnergyImpact: null,
+        rcsDelta: null
+      });
+    }
+    return findings;
+  }
+};
 
 // src/github.ts
 var github = __toESM(require_github(), 1);
@@ -41874,9 +42546,16 @@ async function run() {
       prBranch: process.env.GITHUB_HEAD_REF ?? "unknown"
     };
     const scanners = [
+      // Security
       new SecretsScanner(),
       new OwaspScanner(ALL_OWASP_RULES),
-      new SupplyChainScanner()
+      new SupplyChainScanner(),
+      new PermissionsScanner(),
+      // Correctness
+      new GenerationQualityScanner(),
+      new DeadCodeScanner(),
+      new BehavioralDriftScanner(),
+      new CoverageDeltaScanner()
     ];
     const startTime = performance.now();
     const results = await runScanners(scanners, context2);
