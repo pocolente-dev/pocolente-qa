@@ -1,3 +1,4 @@
+import{createRequire}from'module';const require=createRequire(import.meta.url);
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -13055,7 +13056,7 @@ var require_fetch = __commonJS({
         this.emit("terminated", error);
       }
     };
-    function fetch(input, init = {}) {
+    function fetch2(input, init = {}) {
       webidl.argumentLengthCheck(arguments, 1, { header: "globalThis.fetch" });
       const p = createDeferredPromise();
       let requestObject;
@@ -13985,7 +13986,7 @@ var require_fetch = __commonJS({
       }
     }
     module.exports = {
-      fetch,
+      fetch: fetch2,
       Fetch,
       fetching,
       finalizeAndReportTiming
@@ -17241,7 +17242,7 @@ var require_undici = __commonJS({
     module.exports.getGlobalDispatcher = getGlobalDispatcher;
     if (util2.nodeMajor > 16 || util2.nodeMajor === 16 && util2.nodeMinor >= 8) {
       let fetchImpl = null;
-      module.exports.fetch = async function fetch(resource) {
+      module.exports.fetch = async function fetch2(resource) {
         if (!fetchImpl) {
           fetchImpl = require_fetch().fetch;
         }
@@ -27852,6 +27853,154 @@ var require_dist3 = __commonJS({
   }
 });
 
+// ../../node_modules/.pnpm/fastest-levenshtein@1.0.16/node_modules/fastest-levenshtein/mod.js
+var require_mod = __commonJS({
+  "../../node_modules/.pnpm/fastest-levenshtein@1.0.16/node_modules/fastest-levenshtein/mod.js"(exports) {
+    "use strict";
+    exports.__esModule = true;
+    exports.distance = exports.closest = void 0;
+    var peq = new Uint32Array(65536);
+    var myers_32 = function(a, b) {
+      var n = a.length;
+      var m = b.length;
+      var lst = 1 << n - 1;
+      var pv = -1;
+      var mv = 0;
+      var sc = n;
+      var i = n;
+      while (i--) {
+        peq[a.charCodeAt(i)] |= 1 << i;
+      }
+      for (i = 0; i < m; i++) {
+        var eq = peq[b.charCodeAt(i)];
+        var xv = eq | mv;
+        eq |= (eq & pv) + pv ^ pv;
+        mv |= ~(eq | pv);
+        pv &= eq;
+        if (mv & lst) {
+          sc++;
+        }
+        if (pv & lst) {
+          sc--;
+        }
+        mv = mv << 1 | 1;
+        pv = pv << 1 | ~(xv | mv);
+        mv &= xv;
+      }
+      i = n;
+      while (i--) {
+        peq[a.charCodeAt(i)] = 0;
+      }
+      return sc;
+    };
+    var myers_x = function(b, a) {
+      var n = a.length;
+      var m = b.length;
+      var mhc = [];
+      var phc = [];
+      var hsize = Math.ceil(n / 32);
+      var vsize = Math.ceil(m / 32);
+      for (var i = 0; i < hsize; i++) {
+        phc[i] = -1;
+        mhc[i] = 0;
+      }
+      var j = 0;
+      for (; j < vsize - 1; j++) {
+        var mv_1 = 0;
+        var pv_1 = -1;
+        var start_1 = j * 32;
+        var vlen_1 = Math.min(32, m) + start_1;
+        for (var k = start_1; k < vlen_1; k++) {
+          peq[b.charCodeAt(k)] |= 1 << k;
+        }
+        for (var i = 0; i < n; i++) {
+          var eq = peq[a.charCodeAt(i)];
+          var pb = phc[i / 32 | 0] >>> i & 1;
+          var mb = mhc[i / 32 | 0] >>> i & 1;
+          var xv = eq | mv_1;
+          var xh = ((eq | mb) & pv_1) + pv_1 ^ pv_1 | eq | mb;
+          var ph = mv_1 | ~(xh | pv_1);
+          var mh = pv_1 & xh;
+          if (ph >>> 31 ^ pb) {
+            phc[i / 32 | 0] ^= 1 << i;
+          }
+          if (mh >>> 31 ^ mb) {
+            mhc[i / 32 | 0] ^= 1 << i;
+          }
+          ph = ph << 1 | pb;
+          mh = mh << 1 | mb;
+          pv_1 = mh | ~(xv | ph);
+          mv_1 = ph & xv;
+        }
+        for (var k = start_1; k < vlen_1; k++) {
+          peq[b.charCodeAt(k)] = 0;
+        }
+      }
+      var mv = 0;
+      var pv = -1;
+      var start = j * 32;
+      var vlen = Math.min(32, m - start) + start;
+      for (var k = start; k < vlen; k++) {
+        peq[b.charCodeAt(k)] |= 1 << k;
+      }
+      var score = m;
+      for (var i = 0; i < n; i++) {
+        var eq = peq[a.charCodeAt(i)];
+        var pb = phc[i / 32 | 0] >>> i & 1;
+        var mb = mhc[i / 32 | 0] >>> i & 1;
+        var xv = eq | mv;
+        var xh = ((eq | mb) & pv) + pv ^ pv | eq | mb;
+        var ph = mv | ~(xh | pv);
+        var mh = pv & xh;
+        score += ph >>> m - 1 & 1;
+        score -= mh >>> m - 1 & 1;
+        if (ph >>> 31 ^ pb) {
+          phc[i / 32 | 0] ^= 1 << i;
+        }
+        if (mh >>> 31 ^ mb) {
+          mhc[i / 32 | 0] ^= 1 << i;
+        }
+        ph = ph << 1 | pb;
+        mh = mh << 1 | mb;
+        pv = mh | ~(xv | ph);
+        mv = ph & xv;
+      }
+      for (var k = start; k < vlen; k++) {
+        peq[b.charCodeAt(k)] = 0;
+      }
+      return score;
+    };
+    var distance2 = function(a, b) {
+      if (a.length < b.length) {
+        var tmp = b;
+        b = a;
+        a = tmp;
+      }
+      if (b.length === 0) {
+        return a.length;
+      }
+      if (a.length <= 32) {
+        return myers_32(a, b);
+      }
+      return myers_x(a, b);
+    };
+    exports.distance = distance2;
+    var closest = function(str, arr) {
+      var min_distance = Infinity;
+      var min_index = 0;
+      for (var i = 0; i < arr.length; i++) {
+        var dist = distance2(str, arr[i]);
+        if (dist < min_distance) {
+          min_distance = dist;
+          min_index = i;
+        }
+      }
+      return arr[min_index];
+    };
+    exports.closest = closest;
+  }
+});
+
 // ../../node_modules/.pnpm/@actions+github@6.0.1/node_modules/@actions/github/lib/context.js
 var require_context = __commonJS({
   "../../node_modules/.pnpm/@actions+github@6.0.1/node_modules/@actions/github/lib/context.js"(exports) {
@@ -28752,16 +28901,16 @@ var require_dist_node5 = __commonJS({
       let headers = {};
       let status;
       let url;
-      let { fetch } = globalThis;
+      let { fetch: fetch2 } = globalThis;
       if ((_b = requestOptions.request) == null ? void 0 : _b.fetch) {
-        fetch = requestOptions.request.fetch;
+        fetch2 = requestOptions.request.fetch;
       }
-      if (!fetch) {
+      if (!fetch2) {
         throw new Error(
           "fetch is not set. Please pass a fetch implementation as new Octokit({ request: { fetch }}). Learn more at https://github.com/octokit/octokit.js/#fetch-missing"
         );
       }
-      return fetch(requestOptions.url, {
+      return fetch2(requestOptions.url, {
         method: requestOptions.method,
         body: requestOptions.body,
         redirect: (_c = requestOptions.request) == null ? void 0 : _c.redirect,
@@ -31923,6 +32072,7 @@ var require_github = __commonJS({
 
 // src/main.ts
 var core = __toESM(require_core(), 1);
+import { writeFileSync } from "node:fs";
 
 // ../../node_modules/.pnpm/simple-git@3.33.0/node_modules/simple-git/dist/esm/index.js
 var import_file_exists = __toESM(require_dist(), 1);
@@ -40541,10 +40691,10 @@ var ScanPathsInputSchema = external_exports.object({
 });
 var CoverageInputSchema = external_exports.object({
   enabled: external_exports.boolean().default(true),
-  maxDecreasePercent: external_exports.number().default(2),
-  baseCoveragePath: external_exports.string().default(""),
-  prCoveragePath: external_exports.string().default(""),
-  coverageFormat: external_exports.string().default("lcov")
+  max_decrease_percent: external_exports.number().default(2),
+  base_coverage_path: external_exports.string().default(""),
+  pr_coverage_path: external_exports.string().default(""),
+  coverage_format: external_exports.string().default("lcov")
 });
 var DeadCodeInputSchema = external_exports.object({
   enabled: external_exports.boolean().default(true),
@@ -40557,27 +40707,27 @@ var BehavioralDriftInputSchema = external_exports.object({
 var GenerationQualityInputSchema = external_exports.object({
   enabled: external_exports.boolean().default(true),
   severity: SeveritySchema.default("warn"),
-  llmEnhanced: external_exports.boolean().default(false),
-  llmProvider: external_exports.string().default("anthropic")
+  llm_enhanced: external_exports.boolean().default(false),
+  llm_provider: external_exports.string().default("anthropic")
 });
 var DependenciesInputSchema = external_exports.object({
   enabled: external_exports.boolean().default(true),
   severity: SeveritySchema.default("warn"),
-  maxAgeDays: external_exports.number().default(730),
-  blockOnCriticalCve: external_exports.boolean().default(true)
+  max_age_days: external_exports.number().default(730),
+  block_on_critical_cve: external_exports.boolean().default(true)
 });
 var CorrectnessInputSchema = external_exports.object({
   enabled: external_exports.boolean().default(true),
   coverage: CoverageInputSchema.default({}),
-  deadCode: DeadCodeInputSchema.default({}),
-  behavioralDrift: BehavioralDriftInputSchema.default({}),
-  generationQuality: GenerationQualityInputSchema.default({}),
+  dead_code: DeadCodeInputSchema.default({}),
+  behavioral_drift: BehavioralDriftInputSchema.default({}),
+  generation_quality: GenerationQualityInputSchema.default({}),
   dependencies: DependenciesInputSchema.default({})
 });
 var SecretsInputSchema = external_exports.object({
   enabled: external_exports.boolean().default(true),
   severity: SeveritySchema.default("block"),
-  customPatterns: external_exports.array(external_exports.string()).default([]),
+  custom_patterns: external_exports.array(external_exports.string()).default([]),
   allowlist: external_exports.array(external_exports.string()).default([])
 });
 var OwaspInputSchema = external_exports.object({
@@ -40587,7 +40737,7 @@ var OwaspInputSchema = external_exports.object({
 var SupplyChainInputSchema = external_exports.object({
   enabled: external_exports.boolean().default(true),
   severity: SeveritySchema.default("warn"),
-  blockOnInstallScripts: external_exports.boolean().default(false)
+  block_on_install_scripts: external_exports.boolean().default(false)
 });
 var EuComplianceInputSchema = external_exports.object({
   enabled: external_exports.boolean().default(false)
@@ -40596,8 +40746,8 @@ var SecurityInputSchema = external_exports.object({
   enabled: external_exports.boolean().default(true),
   secrets: SecretsInputSchema.default({}),
   owasp: OwaspInputSchema.default({}),
-  supplyChain: SupplyChainInputSchema.default({}),
-  euCompliance: EuComplianceInputSchema.default({})
+  supply_chain: SupplyChainInputSchema.default({}),
+  eu_compliance: EuComplianceInputSchema.default({})
 });
 var ComplexityInputSchema = external_exports.object({
   enabled: external_exports.boolean().default(true),
@@ -40610,13 +40760,13 @@ var ResourcesInputSchema = external_exports.object({
 var InfrastructureInputSchema = external_exports.object({
   enabled: external_exports.boolean().default(true),
   severity: SeveritySchema.default("warn"),
-  maxBaseImageMb: external_exports.number().default(200)
+  max_base_image_mb: external_exports.number().default(200)
 });
 var RcsInputSchema = external_exports.object({
   enabled: external_exports.boolean().default(true),
   severity: SeveritySchema.default("info"),
-  trendBadge: external_exports.boolean().default(true),
-  degradationThreshold: external_exports.number().default(5)
+  trend_badge: external_exports.boolean().default(true),
+  degradation_threshold: external_exports.number().default(5)
 });
 var GreenopsInputSchema = external_exports.object({
   enabled: external_exports.boolean().default(true),
@@ -40627,15 +40777,15 @@ var GreenopsInputSchema = external_exports.object({
 });
 var RuntimeProfilingInputSchema = external_exports.object({
   enabled: external_exports.boolean().default(false),
-  testCommand: external_exports.string().default("npm test"),
-  warnOnCpuIncreasePercent: external_exports.number().default(20),
-  warnOnMemoryIncreasePercent: external_exports.number().default(25)
+  test_command: external_exports.string().default("npm test"),
+  warn_on_cpu_increase_percent: external_exports.number().default(20),
+  warn_on_memory_increase_percent: external_exports.number().default(25)
 });
 var ReportingInputSchema = external_exports.object({
-  dashboardUrl: external_exports.string().default(""),
-  dashboardApiKey: external_exports.string().default(""),
-  sarifOutput: external_exports.boolean().default(false),
-  jsonOutput: external_exports.boolean().default(false)
+  dashboard_url: external_exports.string().default(""),
+  dashboard_api_key: external_exports.string().default(""),
+  sarif_output: external_exports.boolean().default(false),
+  json_output: external_exports.boolean().default(false)
 });
 var RawConfigSchema = external_exports.object({
   version: external_exports.number().default(1),
@@ -40669,30 +40819,30 @@ function parseConfigFromParsed(parsed) {
       enabled: parsed.correctness.enabled,
       coverage: {
         enabled: parsed.correctness.coverage.enabled,
-        maxDecreasePercent: parsed.correctness.coverage.maxDecreasePercent,
-        baseCoveragePath: parsed.correctness.coverage.baseCoveragePath,
-        prCoveragePath: parsed.correctness.coverage.prCoveragePath,
-        coverageFormat: parsed.correctness.coverage.coverageFormat
+        maxDecreasePercent: parsed.correctness.coverage.max_decrease_percent,
+        baseCoveragePath: parsed.correctness.coverage.base_coverage_path,
+        prCoveragePath: parsed.correctness.coverage.pr_coverage_path,
+        coverageFormat: parsed.correctness.coverage.coverage_format
       },
       deadCode: {
-        enabled: parsed.correctness.deadCode.enabled,
-        severity: parsed.correctness.deadCode.severity
+        enabled: parsed.correctness.dead_code.enabled,
+        severity: parsed.correctness.dead_code.severity
       },
       behavioralDrift: {
-        enabled: parsed.correctness.behavioralDrift.enabled,
-        severity: parsed.correctness.behavioralDrift.severity
+        enabled: parsed.correctness.behavioral_drift.enabled,
+        severity: parsed.correctness.behavioral_drift.severity
       },
       generationQuality: {
-        enabled: parsed.correctness.generationQuality.enabled,
-        severity: parsed.correctness.generationQuality.severity,
-        llmEnhanced: parsed.correctness.generationQuality.llmEnhanced,
-        llmProvider: parsed.correctness.generationQuality.llmProvider
+        enabled: parsed.correctness.generation_quality.enabled,
+        severity: parsed.correctness.generation_quality.severity,
+        llmEnhanced: parsed.correctness.generation_quality.llm_enhanced,
+        llmProvider: parsed.correctness.generation_quality.llm_provider
       },
       dependencies: {
         enabled: parsed.correctness.dependencies.enabled,
         severity: parsed.correctness.dependencies.severity,
-        maxAgeDays: parsed.correctness.dependencies.maxAgeDays,
-        blockOnCriticalCve: parsed.correctness.dependencies.blockOnCriticalCve
+        maxAgeDays: parsed.correctness.dependencies.max_age_days,
+        blockOnCriticalCve: parsed.correctness.dependencies.block_on_critical_cve
       }
     },
     security: {
@@ -40700,7 +40850,7 @@ function parseConfigFromParsed(parsed) {
       secrets: {
         enabled: parsed.security.secrets.enabled,
         severity: parsed.security.secrets.severity,
-        customPatterns: parsed.security.secrets.customPatterns,
+        customPatterns: parsed.security.secrets.custom_patterns,
         allowlist: parsed.security.secrets.allowlist
       },
       owasp: {
@@ -40708,12 +40858,12 @@ function parseConfigFromParsed(parsed) {
         severity: parsed.security.owasp.severity
       },
       supplyChain: {
-        enabled: parsed.security.supplyChain.enabled,
-        severity: parsed.security.supplyChain.severity,
-        blockOnInstallScripts: parsed.security.supplyChain.blockOnInstallScripts
+        enabled: parsed.security.supply_chain.enabled,
+        severity: parsed.security.supply_chain.severity,
+        blockOnInstallScripts: parsed.security.supply_chain.block_on_install_scripts
       },
       euCompliance: {
-        enabled: parsed.security.euCompliance.enabled
+        enabled: parsed.security.eu_compliance.enabled
       }
     },
     greenops: {
@@ -40729,26 +40879,26 @@ function parseConfigFromParsed(parsed) {
       infrastructure: {
         enabled: parsed.greenops.infrastructure.enabled,
         severity: parsed.greenops.infrastructure.severity,
-        maxBaseImageMb: parsed.greenops.infrastructure.maxBaseImageMb
+        maxBaseImageMb: parsed.greenops.infrastructure.max_base_image_mb
       },
       rcs: {
         enabled: parsed.greenops.rcs.enabled,
         severity: parsed.greenops.rcs.severity,
-        trendBadge: parsed.greenops.rcs.trendBadge,
-        degradationThreshold: parsed.greenops.rcs.degradationThreshold
+        trendBadge: parsed.greenops.rcs.trend_badge,
+        degradationThreshold: parsed.greenops.rcs.degradation_threshold
       }
     },
     runtimeProfiling: {
       enabled: runtimeProfilingEnabled,
-      testCommand: parsed.runtime_profiling.testCommand,
-      warnOnCpuIncreasePercent: parsed.runtime_profiling.warnOnCpuIncreasePercent,
-      warnOnMemoryIncreasePercent: parsed.runtime_profiling.warnOnMemoryIncreasePercent
+      testCommand: parsed.runtime_profiling.test_command,
+      warnOnCpuIncreasePercent: parsed.runtime_profiling.warn_on_cpu_increase_percent,
+      warnOnMemoryIncreasePercent: parsed.runtime_profiling.warn_on_memory_increase_percent
     },
     reporting: {
-      dashboardUrl: parsed.reporting.dashboardUrl,
-      dashboardApiKey: parsed.reporting.dashboardApiKey,
-      sarifOutput: parsed.reporting.sarifOutput,
-      jsonOutput: parsed.reporting.jsonOutput
+      dashboardUrl: parsed.reporting.dashboard_url,
+      dashboardApiKey: parsed.reporting.dashboard_api_key,
+      sarifOutput: parsed.reporting.sarif_output,
+      jsonOutput: parsed.reporting.json_output
     },
     warnings
   };
@@ -40979,8 +41129,44 @@ function parseDiff(diffOutput) {
   }
   return results;
 }
+var SEVERITY_TO_LEVEL = {
+  block: "error",
+  warn: "warning",
+  info: "note"
+};
+function toSarif(findings, toolName, toolVersion) {
+  return {
+    $schema: "https://json.schemastore.org/sarif-2.1.0.json",
+    version: "2.1.0",
+    runs: [
+      {
+        tool: {
+          driver: {
+            name: toolName,
+            version: toolVersion,
+            informationUri: "https://github.com/pocolente/pocolente"
+          }
+        },
+        results: findings.map((f) => ({
+          ruleId: f.cwe ? `${f.scanner}/${f.cwe}` : f.scanner,
+          level: SEVERITY_TO_LEVEL[f.severity],
+          message: { text: f.title },
+          locations: [
+            {
+              physicalLocation: {
+                artifactLocation: { uri: f.file },
+                region: { startLine: parseInt(f.line, 10) || 1 }
+              }
+            }
+          ]
+        }))
+      }
+    ]
+  };
+}
 
 // ../scanner-security/dist/index.js
+var import_fastest_levenshtein = __toESM(require_mod(), 1);
 var PATTERNS = [
   {
     name: "aws-access-key",
@@ -41042,6 +41228,38 @@ function matchSecretPatterns(line) {
   }
   return results;
 }
+function shannonEntropy(str) {
+  if (str.length === 0) return 0;
+  const freq = /* @__PURE__ */ new Map();
+  for (const char of str) {
+    freq.set(char, (freq.get(char) ?? 0) + 1);
+  }
+  let entropy = 0;
+  for (const count of freq.values()) {
+    const p = count / str.length;
+    if (p > 0) entropy -= p * Math.log2(p);
+  }
+  return entropy;
+}
+var ASSIGNMENT_STRING_REGEX = /(?:=|:)\s*["']([^"']{20,})["']/;
+var COMMENT_PREFIX = /^\s*(?:\/\/|\/\*|\*|#)/;
+var IMPORT_PATTERN = /^\s*import\s/;
+var URL_WITHOUT_CREDS = /^https?:\/\/[^:@]*$/;
+var ENTROPY_THRESHOLD = 4.5;
+var MIN_LENGTH = 20;
+function isHighEntropySecret(line) {
+  if (COMMENT_PREFIX.test(line)) return null;
+  if (IMPORT_PATTERN.test(line)) return null;
+  const match = ASSIGNMENT_STRING_REGEX.exec(line);
+  if (!match) return null;
+  const value = match[1];
+  if (value.length < MIN_LENGTH) return null;
+  if (URL_WITHOUT_CREDS.test(value)) return null;
+  const entropy = shannonEntropy(value);
+  if (entropy < ENTROPY_THRESHOLD) return null;
+  const confidence = entropy >= 5 ? 0.85 : 0.8;
+  return { matched: value, confidence, entropy };
+}
 var PATTERN_TITLES = {
   "aws-access-key": "AWS Access Key detected",
   "github-token": "GitHub Token detected",
@@ -41065,9 +41283,14 @@ var SecretsScanner = class {
       for (let i = 0; i < file.added.length; i++) {
         const line = file.added[i];
         const matches = matchSecretPatterns(line);
-        const firstMatch = matches.find(
-          (match) => !allowlist.some((a) => match.matched.includes(a))
+        const specificMatch = matches.find(
+          (match) => match.patternName !== "generic-secret-assignment" && !allowlist.some((a) => match.matched.includes(a))
         );
+        const genericMatch = !specificMatch ? matches.find(
+          (match) => match.patternName === "generic-secret-assignment" && !allowlist.some((a) => match.matched.includes(a))
+        ) : void 0;
+        const entropyMatch = !specificMatch ? isHighEntropySecret(line) : null;
+        const firstMatch = specificMatch ?? void 0;
         if (firstMatch) {
           const title = PATTERN_TITLES[firstMatch.patternName] ?? `Secret detected: ${firstMatch.patternName}`;
           findings.push({
@@ -41085,12 +41308,495 @@ var SecretsScanner = class {
             estimatedEnergyImpact: null,
             rcsDelta: null
           });
+        } else if (entropyMatch) {
+          findings.push({
+            layer: "security",
+            scanner: "secrets-scanner",
+            severity,
+            confidence: entropyMatch.confidence,
+            file: file.path,
+            line: String(i + 1),
+            title: "High-entropy string detected (potential secret)",
+            explanation: `A high-entropy string (entropy: ${entropyMatch.entropy.toFixed(2)}) was detected in the added lines of this file. High-entropy strings often indicate secrets or credentials.`,
+            suggestion: "Remove the secret from source code and use environment variables or a secrets manager instead.",
+            cwe: "CWE-798",
+            owasp: null,
+            estimatedEnergyImpact: null,
+            rcsDelta: null
+          });
+        } else if (genericMatch) {
+          const title = PATTERN_TITLES[genericMatch.patternName] ?? `Secret detected: ${genericMatch.patternName}`;
+          findings.push({
+            layer: "security",
+            scanner: "secrets-scanner",
+            severity,
+            confidence: genericMatch.confidence,
+            file: file.path,
+            line: String(i + 1),
+            title,
+            explanation: `A ${genericMatch.patternName} pattern was detected in the added lines of this file. Committing secrets to source control exposes credentials to anyone with repository access.`,
+            suggestion: "Remove the secret from source code and use environment variables or a secrets manager instead.",
+            cwe: "CWE-798",
+            owasp: null,
+            estimatedEnergyImpact: null,
+            rcsDelta: null
+          });
         }
       }
     }
     return findings;
   }
 };
+var TS_JS_EXTENSIONS = /\.(ts|tsx|js|jsx|mts|mjs|cts|cjs)$/;
+var OwaspScanner = class {
+  constructor(rules) {
+    this.rules = rules;
+  }
+  id = "owasp-scanner";
+  name = "OWASP Pattern Scanner";
+  layer = "security";
+  async scan(context2) {
+    if (!context2.config.security.owasp.enabled) return [];
+    const severity = context2.config.security.owasp.severity;
+    const findings = [];
+    for (const file of context2.diff) {
+      if (!TS_JS_EXTENSIONS.test(file.path)) continue;
+      for (let i = 0; i < file.added.length; i++) {
+        const line = file.added[i];
+        const lineNumber = i + 1;
+        for (const rule of this.rules) {
+          const match = rule.testLine(line, lineNumber, file);
+          if (match) {
+            findings.push({
+              layer: "security",
+              scanner: this.id,
+              severity,
+              confidence: match.confidence,
+              file: file.path,
+              line: String(lineNumber),
+              title: `${rule.name}: ${rule.cwe}`,
+              explanation: `${rule.description} Matched: \`${match.matchedText}\``,
+              suggestion: match.suggestion,
+              cwe: rule.cwe,
+              owasp: rule.owaspCategory,
+              estimatedEnergyImpact: null,
+              rcsDelta: null
+            });
+          }
+        }
+      }
+    }
+    return findings;
+  }
+};
+var QUERY_METHOD_RE = /\.(query|execute|raw|\$queryRaw|\$executeRaw)\s*\(/;
+var TEMPLATE_INTERP_RE = /`[^`]*\$\{[^}]+\}[^`]*`/;
+var STRING_CONCAT_RE = /["'][^"']*["']\s*\+|\+\s*["'][^"']*["']/;
+var TAGGED_TEMPLATE_RE = /\w`/;
+var PARAMETERIZED_RE = /["'`][^"'`]*["'`]\s*,\s*\[/;
+var sqlInjectionRule = {
+  id: "sql-injection",
+  name: "SQL Injection",
+  cwe: "CWE-89",
+  owaspCategory: "A03:2021-Injection",
+  description: "Detected potential SQL injection: user-controlled data is interpolated directly into a SQL query. Use parameterized queries or prepared statements instead.",
+  testLine(line, lineNumber, _file) {
+    if (!QUERY_METHOD_RE.test(line)) return null;
+    const hasTemplateInterp = TEMPLATE_INTERP_RE.test(line);
+    const hasStringConcat = STRING_CONCAT_RE.test(line);
+    if (!hasTemplateInterp && !hasStringConcat) return null;
+    if (hasTemplateInterp && TAGGED_TEMPLATE_RE.test(line)) return null;
+    if (PARAMETERIZED_RE.test(line)) return null;
+    const matched = QUERY_METHOD_RE.exec(line);
+    return {
+      line: lineNumber,
+      matchedText: matched[0],
+      confidence: 0.9,
+      suggestion: "Use parameterized queries (e.g., db.query('SELECT ... WHERE id = $1', [id])) or a query builder with bound parameters."
+    };
+  }
+};
+var DANGEROUS_HTML_VAR_RE = /__html:\s*(?!["'`])[^\s}]+/;
+var V_HTML_RE = /v-html\s*=/;
+var xssRule = {
+  id: "xss",
+  name: "Cross-Site Scripting (XSS)",
+  cwe: "CWE-79",
+  owaspCategory: "A03:2021-Injection",
+  description: "Detected potential XSS vulnerability: user-controlled data is inserted into HTML without sanitization. Use safe alternatives like textContent, or sanitize input with a trusted library.",
+  testLine(line, lineNumber, _file) {
+    if (line.includes("dangerouslySetInnerHTML")) {
+      if (DANGEROUS_HTML_VAR_RE.test(line)) {
+        return {
+          line: lineNumber,
+          matchedText: "dangerouslySetInnerHTML",
+          confidence: 0.9,
+          suggestion: "Avoid dangerouslySetInnerHTML with dynamic content. If you must use it, sanitize with DOMPurify first."
+        };
+      }
+      return null;
+    }
+    if (line.includes(".innerHTML")) {
+      const assignMatch = /\.innerHTML\s*=\s*(.+?)\s*;?\s*$/.exec(line);
+      if (assignMatch) {
+        const rhs = assignMatch[1].trim();
+        const isStringLiteral = /^["'`].*["'`]$/.test(rhs) || rhs === '""' || rhs === "''" || rhs === "``";
+        const isEmptyString = /^["'`]["'`]$/.test(rhs) || rhs === '""' || rhs === "''";
+        if (!isStringLiteral && !isEmptyString) {
+          return {
+            line: lineNumber,
+            matchedText: ".innerHTML =",
+            confidence: 0.85,
+            suggestion: "Use element.textContent instead of innerHTML for text content. If HTML is needed, sanitize with DOMPurify."
+          };
+        }
+      }
+      return null;
+    }
+    if (V_HTML_RE.test(line)) {
+      return {
+        line: lineNumber,
+        matchedText: "v-html",
+        confidence: 0.8,
+        suggestion: "Avoid v-html with untrusted content. Use v-text for text, or sanitize HTML with DOMPurify before binding."
+      };
+    }
+    return null;
+  }
+};
+var FILE_OP_RE = /\b(fs\.readFile|fs\.readFileSync|fs\.createReadStream|path\.join|path\.resolve)\s*\(/;
+var USER_INPUT_RE = /\b(req|request)\.(params|query|body)\b/;
+var pathTraversalRule = {
+  id: "path-traversal",
+  name: "Path Traversal",
+  cwe: "CWE-22",
+  owaspCategory: "A01:2021-Broken-Access-Control",
+  description: "Detected potential path traversal vulnerability: user-controlled input is used directly in a file system operation. Validate and sanitize paths to prevent directory traversal attacks.",
+  testLine(line, lineNumber, _file) {
+    const opMatch = FILE_OP_RE.exec(line);
+    if (!opMatch) return null;
+    if (!USER_INPUT_RE.test(line)) return null;
+    return {
+      line: lineNumber,
+      matchedText: opMatch[0],
+      confidence: 0.9,
+      suggestion: "Validate and sanitize file paths. Use path.resolve() with a whitelist of allowed base directories, and verify the resolved path stays within the expected directory."
+    };
+  }
+};
+var HTTP_CLIENT_RE = /\b(fetch|axios|axios\.get|axios\.post|axios\.put|axios\.delete|http\.get|http\.request|got|request)\s*\(/;
+var LITERAL_CONCAT_RE = /\(\s*["'][^"']*["']\s*\+\s*["'][^"']*["']/;
+var ssrfRule = {
+  id: "ssrf",
+  name: "Server-Side Request Forgery (SSRF)",
+  cwe: "CWE-918",
+  owaspCategory: "A10:2021-SSRF",
+  description: "Detected potential SSRF vulnerability: a non-literal value is passed as a URL to an HTTP client. Validate URLs against an allowlist before making HTTP requests.",
+  testLine(line, lineNumber, _file) {
+    const clientMatch = HTTP_CLIENT_RE.exec(line);
+    if (!clientMatch) return null;
+    const callEnd = clientMatch.index + clientMatch[0].length;
+    const rest = line.slice(callEnd);
+    if (/^\s*["'`]/.test(rest)) {
+      if (LITERAL_CONCAT_RE.test(line.slice(clientMatch.index))) {
+        return null;
+      }
+      return null;
+    }
+    return {
+      line: lineNumber,
+      matchedText: clientMatch[0],
+      confidence: 0.85,
+      suggestion: "Validate URLs against an allowlist of permitted hosts before making HTTP requests. Never pass user-controlled input directly as a URL."
+    };
+  }
+};
+var YAML_LOAD_RE = /\byaml\.load\s*\(/;
+var DANGEROUS_PACKAGE_RE = /["']node-serialize["']/;
+var REQUIRE_RE = /\brequire\s*\(/;
+var IMPORT_RE = /\bimport\b/;
+var insecureDeserializationRule = {
+  id: "insecure-deserialization",
+  name: "Insecure Deserialization",
+  cwe: "CWE-502",
+  owaspCategory: "A08:2021-Software-and-Data-Integrity-Failures",
+  description: "Detected potential insecure deserialization: using unsafe deserialization methods can allow attackers to execute arbitrary code. Use safe deserialization methods with strict schemas.",
+  testLine(line, lineNumber, _file) {
+    if (DANGEROUS_PACKAGE_RE.test(line)) {
+      if (REQUIRE_RE.test(line) || IMPORT_RE.test(line)) {
+        return {
+          line: lineNumber,
+          matchedText: "node-serialize",
+          confidence: 0.95,
+          suggestion: "Avoid using node-serialize or similar packages that allow arbitrary code execution during deserialization. Use JSON.parse for plain data."
+        };
+      }
+    }
+    if (YAML_LOAD_RE.test(line)) {
+      const hasSchema = /\bschema\b/.test(line) || /\bLoader\b/.test(line);
+      if (hasSchema) return null;
+      return {
+        line: lineNumber,
+        matchedText: "yaml.load(",
+        confidence: 0.9,
+        suggestion: "Use safe deserialization methods. For YAML, use yaml.load with { schema: yaml.SAFE_SCHEMA } or yaml.safeLoad."
+      };
+    }
+    return null;
+  }
+};
+var ALL_OWASP_RULES = [
+  sqlInjectionRule,
+  xssRule,
+  pathTraversalRule,
+  ssrfRule,
+  insecureDeserializationRule
+];
+var NPM_NAME_RE = /^\s+"([^"]+)":\s*\{/;
+var NPM_VERSION_RE = /^\s+"version":\s+"([^"]+)"/;
+var YARN_NAME_RE = /^((?:@[^@/]+\/)?[^@\s,]+)@/;
+var YARN_VERSION_RE = /^\s+version "([^"]+)"/;
+function parseNpmLock(added) {
+  const results = [];
+  let pendingName = null;
+  for (const line of added) {
+    if (pendingName === null) {
+      const nameMatch = NPM_NAME_RE.exec(line);
+      if (nameMatch) {
+        pendingName = nameMatch[1];
+      }
+    } else {
+      const versionMatch = NPM_VERSION_RE.exec(line);
+      if (versionMatch) {
+        results.push({ name: pendingName, version: versionMatch[1] });
+        pendingName = null;
+      } else if (NPM_NAME_RE.test(line)) {
+        const nameMatch = NPM_NAME_RE.exec(line);
+        pendingName = nameMatch ? nameMatch[1] : null;
+      }
+    }
+  }
+  return results;
+}
+function parseYarnLock(added) {
+  const results = [];
+  let pendingName = null;
+  for (const line of added) {
+    if (pendingName === null) {
+      const nameMatch = YARN_NAME_RE.exec(line);
+      if (nameMatch && line.trimEnd().endsWith(":")) {
+        pendingName = nameMatch[1];
+      }
+    } else {
+      const versionMatch = YARN_VERSION_RE.exec(line);
+      if (versionMatch) {
+        results.push({ name: pendingName, version: versionMatch[1] });
+        pendingName = null;
+      } else if (YARN_NAME_RE.test(line) && line.trimEnd().endsWith(":")) {
+        const nameMatch = YARN_NAME_RE.exec(line);
+        pendingName = nameMatch ? nameMatch[1] : null;
+      }
+    }
+  }
+  return results;
+}
+function parseAddedDependencies(diff) {
+  const filename = diff.path.split("/").pop() ?? diff.path;
+  if (filename === "package-lock.json") {
+    return parseNpmLock(diff.added);
+  }
+  if (filename === "yarn.lock") {
+    return parseYarnLock(diff.added);
+  }
+  return [];
+}
+var POPULAR_PACKAGES = [
+  "lodash",
+  "express",
+  "react",
+  "react-dom",
+  "axios",
+  "typescript",
+  "webpack",
+  "next",
+  "vue",
+  "angular",
+  "moment",
+  "dayjs",
+  "chalk",
+  "commander",
+  "inquirer",
+  "jest",
+  "mocha",
+  "vitest",
+  "eslint",
+  "prettier",
+  "dotenv",
+  "cors",
+  "uuid",
+  "debug",
+  "semver",
+  "glob",
+  "minimatch",
+  "yargs",
+  "fs-extra",
+  "rimraf",
+  "body-parser",
+  "cookie-parser",
+  "jsonwebtoken",
+  "bcrypt",
+  "bcryptjs",
+  "mongoose",
+  "sequelize",
+  "prisma",
+  "knex",
+  "pg",
+  "mysql2",
+  "redis",
+  "ioredis",
+  "mongodb",
+  "sqlite3",
+  "nodemon",
+  "concurrently",
+  "cross-env",
+  "tsup",
+  "esbuild",
+  "rollup",
+  "vite",
+  "parcel",
+  "turbo",
+  "nx",
+  "tailwindcss",
+  "postcss",
+  "sass",
+  "less",
+  "styled-components",
+  "zod",
+  "joi",
+  "yup",
+  "ajv",
+  "class-validator",
+  "rxjs",
+  "immer",
+  "zustand",
+  "redux",
+  "mobx",
+  "socket.io",
+  "ws",
+  "graphql",
+  "apollo-server",
+  "fastify",
+  "koa",
+  "hapi",
+  "restify",
+  "micro",
+  "polka",
+  "sharp",
+  "jimp",
+  "multer",
+  "formidable",
+  "busboy",
+  "nodemailer",
+  "twilio",
+  "aws-sdk",
+  "firebase",
+  "stripe"
+];
+var MAX_DISTANCE = 2;
+function checkTyposquatting(packageName) {
+  if (packageName.startsWith("@")) return null;
+  for (const popular of POPULAR_PACKAGES) {
+    if (packageName === popular) return null;
+    const d = (0, import_fastest_levenshtein.distance)(packageName, popular);
+    if (d > 0 && d <= MAX_DISTANCE) {
+      return { similarTo: popular, distance: d };
+    }
+  }
+  return null;
+}
+async function queryOsv(packageName, version, ecosystem = "npm") {
+  try {
+    const response = await fetch("https://api.osv.dev/v1/query", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        version,
+        package: { name: packageName, ecosystem }
+      }),
+      signal: AbortSignal.timeout(5e3)
+    });
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.vulns ?? [];
+  } catch {
+    return [];
+  }
+}
+var SupplyChainScanner = class {
+  id = "supply-chain-scanner";
+  name = "Supply Chain Scanner";
+  layer = "security";
+  async scan(context2) {
+    if (!context2.config.security.supplyChain.enabled) return [];
+    const severity = context2.config.security.supplyChain.severity;
+    const findings = [];
+    for (const file of context2.diff) {
+      const deps = parseAddedDependencies(file);
+      if (deps.length === 0) continue;
+      const osvPromises = deps.map((dep) => queryOsv(dep.name, dep.version));
+      const osvResults = await Promise.all(osvPromises);
+      for (let i = 0; i < deps.length; i++) {
+        const dep = deps[i];
+        const typoMatch = checkTyposquatting(dep.name);
+        if (typoMatch) {
+          findings.push({
+            layer: "security",
+            scanner: this.id,
+            severity: "warn",
+            confidence: 0.8,
+            file: file.path,
+            line: "0",
+            title: `Potential typosquatting: ${dep.name} is similar to ${typoMatch.similarTo}`,
+            explanation: `The package "${dep.name}" has a Levenshtein distance of ${typoMatch.distance} from the popular package "${typoMatch.similarTo}". This may indicate a typosquatting attack.`,
+            suggestion: `Verify that "${dep.name}" is the intended package. If you meant "${typoMatch.similarTo}", update your dependency.`,
+            cwe: "CWE-829",
+            owasp: "A08:2021-Software and Data Integrity Failures",
+            estimatedEnergyImpact: null,
+            rcsDelta: null
+          });
+        }
+        const vulns = osvResults[i];
+        for (const vuln of vulns) {
+          const vulnSeverity = mapOsvSeverity(vuln.severity, severity);
+          findings.push({
+            layer: "security",
+            scanner: this.id,
+            severity: vulnSeverity,
+            confidence: 1,
+            file: file.path,
+            line: "0",
+            title: `Known vulnerability in ${dep.name}@${dep.version}: ${vuln.id}`,
+            explanation: vuln.summary || `Vulnerability ${vuln.id} affects ${dep.name}@${dep.version}.`,
+            suggestion: `Upgrade ${dep.name} to a version that does not contain this vulnerability. Check https://osv.dev/vulnerability/${vuln.id} for more details.`,
+            cwe: null,
+            owasp: "A06:2021-Vulnerable and Outdated Components",
+            estimatedEnergyImpact: null,
+            rcsDelta: null
+          });
+        }
+      }
+    }
+    return findings;
+  }
+};
+function mapOsvSeverity(osvSeverity, defaultSeverity) {
+  const raw = typeof osvSeverity === "string" ? osvSeverity : "";
+  const normalized = raw.toUpperCase();
+  if (normalized === "CRITICAL" || normalized === "HIGH") return "block";
+  if (normalized === "MODERATE" || normalized === "MEDIUM") return "warn";
+  if (normalized === "LOW") return "info";
+  return defaultSeverity;
+}
 
 // src/github.ts
 var github = __toESM(require_github(), 1);
@@ -41167,7 +41873,11 @@ async function run() {
       baseBranch,
       prBranch: process.env.GITHUB_HEAD_REF ?? "unknown"
     };
-    const scanners = [new SecretsScanner()];
+    const scanners = [
+      new SecretsScanner(),
+      new OwaspScanner(ALL_OWASP_RULES),
+      new SupplyChainScanner()
+    ];
     const startTime = performance.now();
     const results = await runScanners(scanners, context2);
     const durationMs = performance.now() - startTime;
@@ -41182,6 +41892,11 @@ async function run() {
       status === "pass" ? "success" : "failure",
       status === "pass" ? "All checks passed" : `${allFindings.filter((f) => f.severity === "block").length} issue(s) found`
     );
+    if (config.reporting.sarifOutput) {
+      const sarif = toSarif(allFindings, "pocolente-qa", "0.0.1");
+      writeFileSync("pocolente-results.sarif", JSON.stringify(sarif, null, 2));
+      core.info("SARIF report written to pocolente-results.sarif");
+    }
     core.setOutput("status", status);
     core.setOutput("finding-count", allFindings.length);
     if (status === "block") {

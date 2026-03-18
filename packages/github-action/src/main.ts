@@ -1,4 +1,5 @@
 import * as core from "@actions/core";
+import { writeFileSync } from "node:fs";
 import { simpleGit } from "simple-git";
 import {
   loadConfig,
@@ -8,8 +9,9 @@ import {
   deduplicateFindings,
   computeStatus,
   parseDiff,
+  toSarif,
 } from "@pocolente/core";
-import { SecretsScanner } from "@pocolente/scanner-security";
+import { SecretsScanner, OwaspScanner, ALL_OWASP_RULES, SupplyChainScanner } from "@pocolente/scanner-security";
 import { createGitHubClient } from "./github.js";
 
 async function run(): Promise<void> {
@@ -43,7 +45,11 @@ async function run(): Promise<void> {
     };
 
     // Register scanners
-    const scanners = [new SecretsScanner()];
+    const scanners = [
+      new SecretsScanner(),
+      new OwaspScanner(ALL_OWASP_RULES),
+      new SupplyChainScanner(),
+    ];
 
     // Run scan
     const startTime = performance.now();
@@ -67,6 +73,13 @@ async function run(): Promise<void> {
         ? "All checks passed"
         : `${allFindings.filter((f) => f.severity === "block").length} issue(s) found`,
     );
+
+    // SARIF output
+    if (config.reporting.sarifOutput) {
+      const sarif = toSarif(allFindings, "pocolente-qa", "0.0.1");
+      writeFileSync("pocolente-results.sarif", JSON.stringify(sarif, null, 2));
+      core.info("SARIF report written to pocolente-results.sarif");
+    }
 
     // Output
     core.setOutput("status", status);
