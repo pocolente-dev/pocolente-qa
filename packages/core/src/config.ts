@@ -132,6 +132,7 @@ const RawConfigSchema = z.object({
   version: z.number().default(1),
   severity_threshold: SeveritySchema.default("warn"),
   block_pr_on: BlockPrOnSchema.default("block"),
+  min_confidence: z.number().min(0).max(1).default(0.85),
   scan_paths: ScanPathsInputSchema.default({}),
   correctness: CorrectnessInputSchema.default({}),
   security: SecurityInputSchema.default({}),
@@ -146,6 +147,7 @@ export interface PocolenteConfig {
   version: number;
   severityThreshold: "block" | "warn" | "info";
   blockPrOn: "block" | "warn" | "info" | "none";
+  minConfidence: number;
   scanPaths: {
     include: string[];
     exclude: string[];
@@ -258,6 +260,7 @@ function parseConfigFromParsed(
     version: parsed.version,
     severityThreshold: parsed.severity_threshold,
     blockPrOn: parsed.block_pr_on,
+    minConfidence: parsed.min_confidence,
     scanPaths: {
       include: parsed.scan_paths.include,
       exclude: parsed.scan_paths.exclude,

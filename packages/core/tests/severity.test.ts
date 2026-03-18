@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { Finding, Severity, ScanLayer } from "../src/types.js";
-import { filterFindings, deduplicateFindings, computeStatus } from "../src/severity.js";
+import { filterFindings, filterByConfidence, deduplicateFindings, computeStatus } from "../src/severity.js";
 
 function makeFinding(overrides: Partial<Finding> = {}): Finding {
   return {
@@ -62,6 +62,41 @@ describe("filterFindings", () => {
 
   it("returns empty array for empty input", () => {
     expect(filterFindings([], "warn")).toHaveLength(0);
+  });
+});
+
+describe("filterByConfidence", () => {
+  it("removes findings below the confidence threshold", () => {
+    const findings = [
+      makeFinding({ confidence: 0.95 }),
+      makeFinding({ confidence: 0.5, file: "b.ts" }),
+      makeFinding({ confidence: 0.85, file: "c.ts" }),
+    ];
+    const result = filterByConfidence(findings, 0.85);
+    expect(result).toHaveLength(2);
+    expect(result.map((f) => f.confidence)).toEqual([0.95, 0.85]);
+  });
+
+  it("always keeps block-severity findings regardless of confidence", () => {
+    const findings = [
+      makeFinding({ severity: "block", confidence: 0.3 }),
+      makeFinding({ severity: "warn", confidence: 0.3, file: "b.ts" }),
+    ];
+    const result = filterByConfidence(findings, 0.85);
+    expect(result).toHaveLength(1);
+    expect(result[0].severity).toBe("block");
+  });
+
+  it("keeps all findings when threshold is 0", () => {
+    const findings = [
+      makeFinding({ confidence: 0.1 }),
+      makeFinding({ confidence: 0.01, file: "b.ts" }),
+    ];
+    expect(filterByConfidence(findings, 0)).toHaveLength(2);
+  });
+
+  it("returns empty for empty input", () => {
+    expect(filterByConfidence([], 0.85)).toHaveLength(0);
   });
 });
 

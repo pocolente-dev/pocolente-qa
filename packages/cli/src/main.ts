@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { simpleGit } from "simple-git";
 import {
-  loadConfig, runScanners, filterFindings, deduplicateFindings, computeStatus, parseDiff, toSarif,
+  loadConfig, runScanners, filterFindings, filterByConfidence, deduplicateFindings, computeStatus, parseDiff, toSarif,
   computeRcs, rcsBadge,
 } from "@pocolente/core";
 import { SecretsScanner, OwaspScanner, ALL_OWASP_RULES, SupplyChainScanner, PermissionsScanner } from "@pocolente/scanner-security";
@@ -94,6 +94,7 @@ async function main(): Promise<void> {
 
   let allFindings = results.flatMap((r) => r.findings);
   allFindings = deduplicateFindings(allFindings);
+  allFindings = filterByConfidence(allFindings, config.minConfidence);
   allFindings = filterFindings(allFindings, config.severityThreshold);
 
   const status = computeStatus(allFindings, config.blockPrOn);

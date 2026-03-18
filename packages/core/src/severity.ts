@@ -17,6 +17,14 @@ export function filterFindings(findings: Finding[], threshold: Severity): Findin
 }
 
 /**
+ * Filters findings to only those at or above the minimum confidence threshold.
+ * Findings with severity "block" bypass the confidence filter (always shown).
+ */
+export function filterByConfidence(findings: Finding[], minConfidence: number): Finding[] {
+  return findings.filter((f) => f.severity === "block" || f.confidence >= minConfidence);
+}
+
+/**
  * Removes duplicate findings by composite key: file:line:scanner.
  */
 export function deduplicateFindings(findings: Finding[]): Finding[] {

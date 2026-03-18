@@ -7,6 +7,7 @@ import {
   runScanners,
   renderComment,
   filterFindings,
+  filterByConfidence,
   deduplicateFindings,
   computeStatus,
   parseDiff,
@@ -79,6 +80,7 @@ async function run(): Promise<void> {
     // Process findings
     let allFindings = results.flatMap((r) => r.findings);
     allFindings = deduplicateFindings(allFindings);
+    allFindings = filterByConfidence(allFindings, config.minConfidence);
     allFindings = filterFindings(allFindings, config.severityThreshold);
 
     const status = computeStatus(allFindings, config.blockPrOn);
