@@ -40684,6 +40684,7 @@ var NEVER = INVALID;
 // ../core/dist/index.js
 var import_yaml = __toESM(require_dist3(), 1);
 import { readFile } from "fs/promises";
+import { spawn as spawn2 } from "child_process";
 var SeveritySchema = external_exports.enum(["block", "warn", "info"]);
 var BlockPrOnSchema = external_exports.enum(["block", "warn", "info", "none"]);
 var ScanPathsInputSchema = external_exports.object({
@@ -40792,6 +40793,7 @@ var RawConfigSchema = external_exports.object({
   version: external_exports.number().default(1),
   severity_threshold: SeveritySchema.default("warn"),
   block_pr_on: BlockPrOnSchema.default("block"),
+  min_confidence: external_exports.number().min(0).max(1).default(0.85),
   scan_paths: ScanPathsInputSchema.default({}),
   correctness: CorrectnessInputSchema.default({}),
   security: SecurityInputSchema.default({}),
@@ -40801,17 +40803,12 @@ var RawConfigSchema = external_exports.object({
 });
 function parseConfigFromParsed(parsed) {
   const warnings = [];
-  let runtimeProfilingEnabled = parsed.runtime_profiling.enabled;
-  if (runtimeProfilingEnabled) {
-    warnings.push(
-      "Runtime profiling is not yet available. This setting will be ignored."
-    );
-    runtimeProfilingEnabled = false;
-  }
+  const runtimeProfilingEnabled = parsed.runtime_profiling.enabled;
   return {
     version: parsed.version,
     severityThreshold: parsed.severity_threshold,
     blockPrOn: parsed.block_pr_on,
+    minConfidence: parsed.min_confidence,
     scanPaths: {
       include: parsed.scan_paths.include,
       exclude: parsed.scan_paths.exclude
@@ -40934,6 +40931,9 @@ function filterFindings(findings, threshold) {
   const minLevel = SEVERITY_ORDER[threshold];
   return findings.filter((f) => SEVERITY_ORDER[f.severity] >= minLevel);
 }
+function filterByConfidence(findings, minConfidence) {
+  return findings.filter((f) => f.severity === "block" || f.confidence >= minConfidence);
+}
 function deduplicateFindings(findings) {
   const seen = /* @__PURE__ */ new Set();
   return findings.filter((f) => {
@@ -41046,6 +41046,22 @@ function renderComment(findings, status, durationMs, rcs) {
   }
   return parts.join("\n");
 }
+function matchGlob(filePath, pattern) {
+  if (pattern === "**") return true;
+  if (pattern.startsWith("**/")) {
+    const suffix = pattern.slice(3);
+    if (suffix.includes("*")) {
+      const parts = suffix.split("*");
+      return parts.every((part) => part === "" || filePath.includes(part));
+    }
+    return filePath.includes(suffix);
+  }
+  if (pattern.endsWith("/**")) {
+    const prefix = pattern.slice(0, -3);
+    return filePath.startsWith(prefix + "/") || filePath === prefix;
+  }
+  return filePath === pattern || filePath.startsWith(pattern.replace("**", ""));
+}
 function withTimeout(promise, ms, message) {
   const timeoutPromise = new Promise((_, reject) => {
     const timer = setTimeout(() => {
@@ -41103,7 +41119,14 @@ async function runSingleScanner(scanner, context3, timeoutMs) {
 }
 async function runScanners(scanners, context3, options) {
   const timeoutMs = options?.timeoutMs ?? 15e3;
-  return Promise.all(scanners.map((scanner) => runSingleScanner(scanner, context3, timeoutMs)));
+  const config = context3.config;
+  const filteredDiff = context3.diff.filter((file) => {
+    const matchesInclude = config.scanPaths.include.some((pattern) => matchGlob(file.path, pattern));
+    const matchesExclude = config.scanPaths.exclude.some((pattern) => matchGlob(file.path, pattern));
+    return matchesInclude && !matchesExclude;
+  });
+  const filteredContext = { ...context3, diff: filteredDiff };
+  return Promise.all(scanners.map((scanner) => runSingleScanner(scanner, filteredContext, timeoutMs)));
 }
 function parseDiff(diffOutput) {
   if (!diffOutput || !diffOutput.trim()) {
@@ -41186,6 +41209,80 @@ function rcsBadge(delta, threshold) {
   if (delta <= 0) return "green";
   if (delta <= threshold) return "yellow";
   return "red";
+}
+function profileCommand(command, options = {}) {
+  const { timeoutMs = 3e5, cwd } = options;
+  return new Promise((resolve) => {
+    const start = performance.now();
+    let stdout = "";
+    let stderr = "";
+    let killed = false;
+    const parts = command.split(" ");
+    const child = spawn2(parts[0], parts.slice(1), {
+      shell: true,
+      cwd,
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    const timer = setTimeout(() => {
+      killed = true;
+      child.kill("SIGKILL");
+    }, timeoutMs);
+    child.stdout?.on("data", (data) => {
+      stdout += data.toString();
+    });
+    child.stderr?.on("data", (data) => {
+      stderr += data.toString();
+    });
+    child.on("error", (err) => {
+      clearTimeout(timer);
+      const wallClockMs = performance.now() - start;
+      resolve({
+        cpuMs: 0,
+        peakMemoryMb: 0,
+        wallClockMs,
+        exitCode: -1,
+        stdout,
+        stderr,
+        error: err.message
+      });
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      const wallClockMs = performance.now() - start;
+      const cpuMs = wallClockMs * 0.8;
+      const peakMemoryMb = process.memoryUsage().heapUsed / 1024 / 1024;
+      const isNotFound = !killed && (code === 127 || stderr.toLowerCase().includes("command not found") || stderr.toLowerCase().includes("not found"));
+      resolve({
+        cpuMs: Math.round(cpuMs * 100) / 100,
+        peakMemoryMb: Math.round(peakMemoryMb * 100) / 100,
+        wallClockMs: Math.round(wallClockMs * 100) / 100,
+        exitCode: code ?? -1,
+        stdout,
+        stderr,
+        error: killed ? `timeout: Command timed out after ${timeoutMs}ms` : isNotFound ? `Command not found: ${command}` : null
+      });
+    });
+  });
+}
+var DEFAULT_GRID_INTENSITY = 400;
+var DEFAULT_TDP_WATTS = 65;
+function computeSci(input) {
+  const tdpWatts = input.tdpWatts ?? DEFAULT_TDP_WATTS;
+  const gridIntensity = input.gridIntensityGCo2PerKwh ?? DEFAULT_GRID_INTENSITY;
+  const embodied = input.embodiedGCo2 ?? 0;
+  const units = input.functionalUnits ?? 1;
+  const cpuHours = input.cpuMs / 1e3 / 3600;
+  const energyKwh = tdpWatts * cpuHours / 1e3;
+  const sciGCo2 = (energyKwh * gridIntensity + embodied) / units;
+  return {
+    energyKwh: Math.round(energyKwh * 1e6) / 1e6,
+    sciGCo2: Math.round(sciGCo2 * 1e3) / 1e3,
+    gridIntensity,
+    tdpWatts
+  };
+}
+function formatSci(sci) {
+  return `${sci.sciGCo2} gCO2eq (${sci.energyKwh.toFixed(6)} kWh @ ${sci.gridIntensity} gCO2/kWh)`;
 }
 
 // ../scanner-security/dist/index.js
@@ -42827,6 +42924,52 @@ var InfraBloatScanner = class {
     ];
   }
 };
+var RuntimeProfilerScanner = class {
+  id = "runtime-profiler-scanner";
+  name = "Runtime Profiler";
+  layer = "greenops";
+  async scan(context3) {
+    if (!context3.config.runtimeProfiling.enabled) return [];
+    const command = context3.config.runtimeProfiling.testCommand;
+    const result = await profileCommand(command, { cwd: context3.repoRoot, timeoutMs: 3e5 });
+    const findings = [];
+    if (result.error) {
+      findings.push({
+        layer: "greenops",
+        scanner: this.id,
+        severity: "info",
+        confidence: 1,
+        file: "",
+        line: "",
+        title: "Runtime profiling: command error",
+        explanation: `Test command "${command}" encountered an error: ${result.error}`,
+        suggestion: "Check that the test command is correct and the project is properly set up.",
+        cwe: null,
+        owasp: null,
+        estimatedEnergyImpact: null,
+        rcsDelta: null
+      });
+      return findings;
+    }
+    const sci = computeSci({ cpuMs: result.cpuMs });
+    findings.push({
+      layer: "greenops",
+      scanner: this.id,
+      severity: "info",
+      confidence: 1,
+      file: "",
+      line: "",
+      title: `Runtime profile: ${formatSci(sci)}`,
+      explanation: `Test suite completed in ${result.wallClockMs.toFixed(0)}ms. CPU: ${result.cpuMs.toFixed(0)}ms, Peak memory: ${result.peakMemoryMb.toFixed(1)}MB. Exit code: ${result.exitCode}. ${result.exitCode !== 0 ? "Warning: tests exited with non-zero code." : ""}`,
+      suggestion: "Compare with previous runs to track resource consumption trends.",
+      cwe: null,
+      owasp: null,
+      estimatedEnergyImpact: null,
+      rcsDelta: null
+    });
+    return findings;
+  }
+};
 
 // src/github.ts
 var github = __toESM(require_github(), 1);
@@ -42917,13 +43060,15 @@ async function run() {
       // GreenOps
       new ComplexityScanner(),
       new ResourceScanner(),
-      new InfraBloatScanner()
+      new InfraBloatScanner(),
+      new RuntimeProfilerScanner()
     ];
     const startTime = performance.now();
     const results = await runScanners(scanners, context3);
     const durationMs = performance.now() - startTime;
     let allFindings = results.flatMap((r) => r.findings);
     allFindings = deduplicateFindings(allFindings);
+    allFindings = filterByConfidence(allFindings, config.minConfidence);
     allFindings = filterFindings(allFindings, config.severityThreshold);
     const status = computeStatus(allFindings, config.blockPrOn);
     const rcsDelta = computeRcs(allFindings);

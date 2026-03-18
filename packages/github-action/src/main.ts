@@ -20,7 +20,7 @@ import {
   BehavioralDriftScanner,
   CoverageDeltaScanner,
 } from "@pocolente/scanner-correctness";
-import { ComplexityScanner, ResourceScanner, InfraBloatScanner } from "@pocolente/scanner-greenops";
+import { ComplexityScanner, ResourceScanner, InfraBloatScanner, RuntimeProfilerScanner } from "@pocolente/scanner-greenops";
 import { computeRcs, rcsBadge } from "@pocolente/core";
 import { createGitHubClient } from "./github.js";
 
@@ -70,6 +70,7 @@ async function run(): Promise<void> {
       new ComplexityScanner(),
       new ResourceScanner(),
       new InfraBloatScanner(),
+      new RuntimeProfilerScanner(),
     ];
 
     // Run scan

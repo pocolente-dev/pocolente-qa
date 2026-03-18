@@ -11,7 +11,7 @@ import {
   BehavioralDriftScanner,
   CoverageDeltaScanner,
 } from "@pocolente/scanner-correctness";
-import { ComplexityScanner, ResourceScanner, InfraBloatScanner } from "@pocolente/scanner-greenops";
+import { ComplexityScanner, ResourceScanner, InfraBloatScanner, RuntimeProfilerScanner } from "@pocolente/scanner-greenops";
 import { formatFindings } from "./formatter.js";
 import { initConfig } from "./init.js";
 
@@ -86,6 +86,7 @@ async function main(): Promise<void> {
     new ComplexityScanner(),
     new ResourceScanner(),
     new InfraBloatScanner(),
+    new RuntimeProfilerScanner(),
   ];
 
   const startTime = performance.now();
