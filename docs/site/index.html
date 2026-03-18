@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pocolente QA — The calm, deliberate pause between code written and code deployed</title>
+  <meta name="description" content="Open-source CI/CD quality gate that scans pull requests for correctness, security, and energy efficiency. GitHub Action + CLI.">
+  <meta name="theme-color" content="#1A1A2E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ========================================
+       POCOLENTE QA — LANDING PAGE
+       Aesthetic: Editorial Calm
+       ======================================== */
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* Core palette */
+      --bg: #FAF8F5;
+      --bg-warm: #F5F0EB;
+      --ink: #1A1A2E;
+      --ink-light: #4A4A5E;
+      --ink-muted: #8A8A9E;
+      --border: #E0DCD6;
+
+      /* Accent colors — the three pillars */
+      --coral: #E8634A;
+      --coral-soft: #FDF0ED;
+      --blue: #4A90D9;
+      --blue-soft: #EDF4FC;
+      --green: #4AAF5C;
+      --green-soft: #EDF8EF;
+
+      /* Warm gold for decorative accents */
+      --gold: #C4956A;
+      --gold-soft: #F8F0E8;
+
+      /* Typography */
+      --font-display: 'Instrument Serif', Georgia, serif;
+      --font-body: 'Outfit', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Menlo', monospace;
+
+      /* Spacing scale */
+      --space-xs: 0.5rem;
+      --space-sm: 1rem;
+      --space-md: 1.5rem;
+      --space-lg: 3rem;
+      --space-xl: 5rem;
+      --space-2xl: 8rem;
+
+      /* Layout */
+      --max-width: 1100px;
+      --content-padding: 1.5rem;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-body);
+      font-weight: 400;
+      font-size: 1.0625rem;
+      line-height: 1.7;
+      color: var(--ink);
+      background-color: var(--bg);
+    }
+
+    ::selection {
+      background: var(--gold-soft);
+      color: var(--ink);
+    }
+
+    a {
+      color: var(--gold);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+    a:hover {
+      color: var(--coral);
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 var(--content-padding);
+    }
+
+    /* ========================================
+       SCROLL REVEAL ANIMATION
+       ======================================== */
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s cubic-bezier(0.25, 0.1, 0.25, 1),
+                  transform 0.7s cubic-bezier(0.25, 0.1, 0.25, 1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+
+    /* ========================================
+       NAVIGATION
+       ======================================== */
+
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 1.25rem 0;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+    .nav.scrolled {
+      background: rgba(250, 248, 245, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 1px 0 var(--border);
+    }
+    .nav .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+    .nav-logo em {
+      font-style: italic;
+      color: var(--gold);
+    }
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--ink-light);
+      font-size: 0.9rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    .nav-links a:hover {
+      color: var(--ink);
+    }
+
+    /* ========================================
+       HERO
+       ======================================== */
+
+    .hero {
+      padding: calc(var(--space-2xl) + 3rem) 0 var(--space-2xl);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      left: -20%;
+      width: 140%;
+      height: 140%;
+      background:
+        radial-gradient(ellipse 600px 400px at 30% 20%, rgba(232, 99, 74, 0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 500px 350px at 70% 30%, rgba(74, 144, 217, 0.05) 0%, transparent 70%),
+        radial-gradient(ellipse 400px 300px at 50% 60%, rgba(74, 175, 92, 0.04) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .hero > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      margin-bottom: var(--space-md);
+      padding: 0.4rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      font-weight: 400;
+      line-height: 1.08;
+      letter-spacing: -0.025em;
+      color: var(--ink);
+      margin-bottom: var(--space-md);
+    }
+    .hero h1 em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .hero-tagline {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: clamp(1.15rem, 2.2vw, 1.45rem);
+      color: var(--ink-light);
+      max-width: 600px;
+      margin: 0 auto var(--space-lg);
+      line-height: 1.5;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.85rem 2rem;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      font-weight: 500;
+      border-radius: 6px;
+      transition: all 0.25s ease;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--ink);
+      color: var(--bg);
+    }
+    .btn-primary:hover {
+      background: #2A2A3E;
+      color: var(--bg);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(26, 26, 46, 0.2);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--ink);
+      border: 1.5px solid var(--border);
+    }
+    .btn-secondary:hover {
+      border-color: var(--ink);
+      color: var(--ink);
+      transform: translateY(-1px);
+    }
+
+    .btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* ========================================
+       PHILOSOPHY SECTION
+       ======================================== */
+
+    .philosophy {
+      padding: var(--space-xl) 0;
+    }
+
+    .philosophy-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .philosophy-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: var(--space-sm);
+    }
+
+    .philosophy h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 400;
+      line-height: 1.2;
+      letter-spacing: -0.015em;
+      margin-bottom: var(--space-md);
+    }
+    .philosophy h2 em {
+      font-style: italic;
+    }
+
+    .philosophy p {
+      color: var(--ink-light);
+      font-size: 1.1rem;
+      line-height: 1.8;
+    }
+
+    .divider {
+      width: 48px;
+      height: 1px;
+      background: var(--border);
+      margin: var(--space-xl) auto;
+    }
+
+    /* ========================================
+       FEATURES — THREE PILLARS
+       ======================================== */
+
+    .features {
+      padding: var(--space-xl) 0;
+    }
+
+    .features-header {
+      text-align: center;
+      margin-bottom: var(--space-lg);
+    }
+
+    .features-header h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 400;
+      line-height: 1.2;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .feature-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .feature-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(26, 26, 46, 0.06);
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+    }
+    .feature-card.security::before { background: var(--coral); }
+    .feature-card.correctness::before { background: var(--blue); }
+    .feature-card.greenops::before { background: var(--green); }
+
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: var(--space-md);
+      font-size: 1.3rem;
+    }
+    .security .feature-icon { background: var(--coral-soft); color: var(--coral); }
+    .correctness .feature-icon { background: var(--blue-soft); color: var(--blue); }
+    .greenops .feature-icon { background: var(--green-soft); color: var(--green); }
+
+    .feature-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 400;
+      margin-bottom: 0.75rem;
+    }
+
+    .feature-card p {
+      color: var(--ink-light);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin-bottom: var(--space-md);
+    }
+
+    .feature-list {
+      list-style: none;
+    }
+    .feature-list li {
+      padding: 0.45rem 0;
+      font-size: 0.9rem;
+      color: var(--ink-light);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      line-height: 1.5;
+    }
+    .feature-list li::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      margin-top: 0.55rem;
+      flex-shrink: 0;
+    }
+    .security .feature-list li::before { background: var(--coral); }
+    .correctness .feature-list li::before { background: var(--blue); }
+    .greenops .feature-list li::before { background: var(--green); }
+
+    /* ========================================
+       QUICK START
+       ======================================== */
+
+    .quickstart {
+      padding: var(--space-xl) 0;
+      background: var(--bg-warm);
+      margin: var(--space-xl) 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .quickstart-header {
+      text-align: center;
+      margin-bottom: var(--space-lg);
+    }
+
+    .quickstart-header h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 400;
+    }
+
+    .tabs {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .tab-buttons {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 0.85rem 1.5rem;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--ink-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: color 0.2s ease;
+      position: relative;
+    }
+    .tab-btn::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: transparent;
+      transition: background 0.2s ease;
+    }
+    .tab-btn:hover {
+      color: var(--ink-light);
+    }
+    .tab-btn.active {
+      color: var(--ink);
+    }
+    .tab-btn.active::after {
+      background: var(--ink);
+    }
+
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    .code-block {
+      background: var(--ink);
+      color: #E8E6E3;
+      border-radius: 0 0 10px 10px;
+      padding: 1.5rem 2rem;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+      line-height: 1.8;
+      position: relative;
+    }
+
+    .code-block .comment {
+      color: #6B7280;
+    }
+    .code-block .keyword {
+      color: #A78BFA;
+    }
+    .code-block .string {
+      color: #86EFAC;
+    }
+    .code-block .key {
+      color: #93C5FD;
+    }
+    .code-block .punctuation {
+      color: #9CA3AF;
+    }
+    .code-block .command {
+      color: #FDE68A;
+    }
+    .code-block .flag {
+      color: #FDA4AF;
+    }
+
+    .code-copy {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #9CA3AF;
+      padding: 0.35rem 0.7rem;
+      border-radius: 5px;
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .code-copy:hover {
+      background: rgba(255,255,255,0.14);
+      color: #E8E6E3;
+    }
+
+    /* ========================================
+       SCANNER REFERENCE TABLE
+       ======================================== */
+
+    .scanners {
+      padding: var(--space-xl) 0;
+    }
+
+    .scanners-header {
+      text-align: center;
+      margin-bottom: var(--space-lg);
+    }
+
+    .scanners-header h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 400;
+      margin-bottom: 0.5rem;
+    }
+    .scanners-header p {
+      color: var(--ink-muted);
+      font-size: 1rem;
+    }
+
+    .scanner-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .scanner-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .scanner-table thead th {
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      padding: 0.75rem 1rem;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .scanner-table tbody td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--ink-light);
+      vertical-align: top;
+    }
+
+    .scanner-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .scanner-table tbody tr:hover {
+      background: rgba(196, 149, 106, 0.04);
+    }
+
+    .scanner-name {
+      font-weight: 500;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    .scanner-pillar {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 100px;
+    }
+    .scanner-pillar.security {
+      background: var(--coral-soft);
+      color: var(--coral);
+    }
+    .scanner-pillar.correctness {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+    .scanner-pillar.greenops {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .cwe-tag {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--ink-muted);
+    }
+
+    /* ========================================
+       FOOTER
+       ======================================== */
+
+    .footer {
+      padding: var(--space-lg) 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+    }
+
+    .footer-brand {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      color: var(--ink);
+    }
+    .footer-brand em {
+      font-style: italic;
+      color: var(--gold);
+    }
+    .footer-tagline {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 0.85rem;
+      color: var(--ink-muted);
+      margin-top: 0.25rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+    }
+    .footer-links a {
+      color: var(--ink-muted);
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    .footer-links a:hover {
+      color: var(--ink);
+    }
+
+    .footer-legal {
+      width: 100%;
+      text-align: center;
+      margin-top: var(--space-md);
+      padding-top: var(--space-md);
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--ink-muted);
+    }
+
+    /* ========================================
+       RESPONSIVE
+       ======================================== */
+
+    @media (max-width: 900px) {
+      .features-grid {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+      }
+    }
+
+    @media (max-width: 640px) {
+      :root {
+        --content-padding: 1.25rem;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .hero {
+        padding: calc(var(--space-xl) + 2rem) 0 var(--space-xl);
+      }
+
+      .hero-ctas {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .btn {
+        width: 100%;
+        max-width: 280px;
+        justify-content: center;
+      }
+
+      .scanner-table {
+        font-size: 0.82rem;
+      }
+
+      .footer-inner {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .footer-links {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================================ NAV ================================ -->
+  <nav class="nav" id="nav">
+    <div class="container">
+      <a href="#" class="nav-logo">Poco<em>lente</em></a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#quickstart">Quick Start</a></li>
+        <li><a href="#scanners">Scanners</a></li>
+        <li><a href="https://github.com/pocolente-dev/pocolente-qa" target="_blank" rel="noopener">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ================================ HERO ================================ -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge reveal">Open Source &middot; MIT License</div>
+      <h1 class="reveal reveal-delay-1">Poco<em>lente</em> QA</h1>
+      <p class="hero-tagline reveal reveal-delay-2">The calm, deliberate pause between code written and code deployed.</p>
+      <div class="hero-ctas reveal reveal-delay-3">
+        <a href="#quickstart" class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          Get Started
+        </a>
+        <a href="https://github.com/pocolente-dev/pocolente-qa" target="_blank" rel="noopener" class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================ PHILOSOPHY ================================ -->
+  <section class="philosophy">
+    <div class="container">
+      <div class="philosophy-inner reveal">
+        <p class="philosophy-label">Festina Lente</p>
+        <h2><em>Make haste slowly.</em></h2>
+        <p>
+          Pocolente QA is an open-source CI/CD quality gate that scans pull requests
+          for <strong>correctness</strong>, <strong>security</strong>, and <strong>energy
+          efficiency</strong>. It runs as a GitHub Action or standalone CLI and blocks merge
+          until your standards are met. It is the deliberate pause that catches what speed
+          missed&thinsp;&mdash;&thinsp;without slowing you down.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ================================ FEATURES ================================ -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="features-header reveal">
+        <h2>Three pillars of quality</h2>
+      </div>
+
+      <div class="features-grid">
+        <!-- Security -->
+        <div class="feature-card security reveal reveal-delay-1">
+          <div class="feature-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3>Security</h3>
+          <p>Catch vulnerabilities, leaked secrets, and insecure patterns before they reach production.</p>
+          <ul class="feature-list">
+            <li>Secrets Scanner &mdash; keys, tokens, PEM files, high-entropy strings</li>
+            <li>OWASP Patterns &mdash; SQLi, XSS, SSRF, path traversal (CWE-mapped)</li>
+            <li>Supply Chain &mdash; typosquatting, OSV vulnerabilities, lockfile analysis</li>
+            <li>Permissions &mdash; K8s RBAC wildcards, Docker root containers</li>
+          </ul>
+        </div>
+
+        <!-- Correctness -->
+        <div class="feature-card correctness reveal reveal-delay-2">
+          <div class="feature-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <h3>Correctness</h3>
+          <p>Detect bugs, regressions, and low-quality AI-generated code patterns automatically.</p>
+          <ul class="feature-list">
+            <li>Generation Quality &mdash; empty catch blocks, console leaks, orphan TODOs</li>
+            <li>Dead Code &mdash; unused imports, unreachable code after return/throw</li>
+            <li>Behavioral Drift &mdash; removed exports, changed signatures, breaking APIs</li>
+            <li>Coverage Delta &mdash; test coverage decrease with configurable thresholds</li>
+          </ul>
+        </div>
+
+        <!-- GreenOps -->
+        <div class="feature-card greenops reveal reveal-delay-3">
+          <div class="feature-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4-4 8-7.5 8-12A8 8 0 004 10c0 4.5 4 8 8 12z"/><path d="M12 10a2 2 0 100 4 2 2 0 000-4z"/></svg>
+          </div>
+          <h3>GreenOps</h3>
+          <p>The differentiator. No other CI tool scans for energy efficiency in your pull requests.</p>
+          <ul class="feature-list">
+            <li>Complexity &mdash; nested loops, N+1 queries, quadratic concatenation</li>
+            <li>Resource &mdash; sync I/O in async, unbounded array growth</li>
+            <li>Infra Bloat &mdash; fat Docker images, missing K8s limits, :latest tags</li>
+            <li>Runtime Profiler &mdash; CPU, memory, wall-clock, SCI score estimation</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================ QUICK START ================================ -->
+  <section class="quickstart" id="quickstart">
+    <div class="container">
+      <div class="quickstart-header reveal">
+        <h2>Up and running in seconds</h2>
+      </div>
+
+      <div class="tabs reveal">
+        <div class="tab-buttons" role="tablist">
+          <button class="tab-btn active" role="tab" aria-selected="true" data-tab="cli">CLI</button>
+          <button class="tab-btn" role="tab" aria-selected="false" data-tab="action">GitHub Action</button>
+        </div>
+
+        <div class="tab-content active" id="tab-cli" role="tabpanel">
+          <div class="code-block">
+            <button class="code-copy" data-target="cli" aria-label="Copy to clipboard">Copy</button>
+<span class="comment"># Run without installing</span>
+<span class="command">npx</span> @pocolente/cli scan
+
+<span class="comment"># Or install globally</span>
+<span class="command">npm</span> install <span class="flag">-g</span> @pocolente/cli
+<span class="command">pocolente</span> init
+<span class="command">pocolente</span> scan</div>
+        </div>
+
+        <div class="tab-content" id="tab-action" role="tabpanel">
+          <div class="code-block">
+            <button class="code-copy" data-target="action" aria-label="Copy to clipboard">Copy</button>
+<span class="comment"># .github/workflows/pocolente.yml</span>
+<span class="key">name</span><span class="punctuation">:</span> <span class="string">Pocolente QA</span>
+<span class="key">on</span><span class="punctuation">:</span>
+  <span class="key">pull_request</span><span class="punctuation">:</span>
+    <span class="key">branches</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">main</span><span class="punctuation">]</span>
+
+<span class="key">jobs</span><span class="punctuation">:</span>
+  <span class="key">scan</span><span class="punctuation">:</span>
+    <span class="key">runs-on</span><span class="punctuation">:</span> <span class="string">ubuntu-latest</span>
+    <span class="key">steps</span><span class="punctuation">:</span>
+      <span class="punctuation">-</span> <span class="key">uses</span><span class="punctuation">:</span> <span class="string">actions/checkout@v4</span>
+      <span class="punctuation">-</span> <span class="key">uses</span><span class="punctuation">:</span> <span class="string">pocolente-dev/pocolente-qa@v1</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================ SCANNER REFERENCE ================================ -->
+  <section class="scanners" id="scanners">
+    <div class="container">
+      <div class="scanners-header reveal">
+        <h2>Scanner reference</h2>
+        <p>12 scanners across three pillars, each with CWE mappings and fix suggestions.</p>
+      </div>
+
+      <div class="scanner-table-wrap reveal">
+        <table class="scanner-table">
+          <thead>
+            <tr>
+              <th>Scanner</th>
+              <th>Pillar</th>
+              <th>What it catches</th>
+              <th>CWE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="scanner-name">Secrets</td>
+              <td><span class="scanner-pillar security">Security</span></td>
+              <td>AWS keys, GitHub tokens, PEM files, JWTs, database URLs, high-entropy strings</td>
+              <td class="cwe-tag">CWE-798</td>
+            </tr>
+            <tr>
+              <td class="scanner-name">OWASP Patterns</td>
+              <td><span class="scanner-pillar security">Security</span></td>
+              <td>SQL injection, XSS, path traversal, SSRF, insecure deserialization</td>
+              <td class="cwe-tag">CWE-89, 79, 22</td>
+            </tr>
+            <tr>
+              <td class="scanner-name">Supply Chain</td>
+              <td><span class="scanner-pillar security">Security</span></td>
+              <td>Typosquatting, OSV vulnerabilities, lockfile integrity</td>
+              <td class="cwe-tag">CWE-1357</td>
+            </tr>
+            <tr>
+              <td class="scanner-name">Permissions</td>
+              <td><span class="scanner-pillar security">Security</span></td>
+              <td>K8s RBAC wildcards, Docker root containers, broad CORS</td>
+              <td class="cwe-tag">CWE-250</td>
+            </tr>
+            <tr>
+              <td class="scanner-name">Generation Quality</td>
+              <td><span class="scanner-pillar correctness">Correctness</span></td>
+              <td>Empty catch blocks, console statements, unlinked TODOs</td>
+              <td class="cwe-tag">CWE-390</td>
+            </tr>
+            <tr>
+              <td class="scanner-name">Dead Code</td>
+              <td><span class="scanner-pillar correctness">Correctness</span></td>
+              <td>Unused imports, unreachable code after return/throw</td>
+              <td class="cwe-tag">CWE-561</td>
+            </tr>
+            <tr>
+              <td class="scanner-name">Behavioral Drift</td>
+              <td><span class="scanner-pillar correctness">Correctness</span></td>
+              <td>Removed exports, changed signatures, breaking API changes</td>
+              <td class="cwe-tag">CWE-440</td>
+            </tr>
+            <tr>
+              <td class="scanner-name">Coverage Delta</td>
+              <td><span class="scanner-pillar correctness">Correctness</span></td>
+              <td>Test coverage decrease, untested new code paths</td>
+              <td class="cwe-tag">&mdash;</td>
+            </tr>
+            <tr>
+              <td class="scanner-name">Complexity</td>
+              <td><span class="scanner-pillar greenops">GreenOps</span></td>
+              <td>Nested loops O(n&sup2;), N+1 queries, quadratic string concat</td>
+              <td class="cwe-tag">CWE-407</td>
+            </tr>
+            <tr>
+              <td class="scanner-name">Resource</td>
+              <td><span class="scanner-pillar greenops">GreenOps</span></td>
+              <td>Sync I/O in async, unbounded array growth, missing cleanup</td>
+              <td class="cwe-tag">CWE-400</td>
+            </tr>
+            <tr>
+              <td class="scanner-name">Infra Bloat</td>
+              <td><span class="scanner-pillar greenops">GreenOps</span></td>
+              <td>Fat Docker images, missing K8s resource limits, :latest tags</td>
+              <td class="cwe-tag">&mdash;</td>
+            </tr>
+            <tr>
+              <td class="scanner-name">Runtime Profiler</td>
+              <td><span class="scanner-pillar greenops">GreenOps</span></td>
+              <td>CPU time, peak memory, wall-clock, SCI score estimation</td>
+              <td class="cwe-tag">&mdash;</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================ FOOTER ================================ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div>
+          <div class="footer-brand">Poco<em>lente</em> QA</div>
+          <div class="footer-tagline">Festina lente &mdash; make haste slowly.</div>
+        </div>
+        <ul class="footer-links">
+          <li><a href="https://github.com/pocolente-dev/pocolente-qa" target="_blank" rel="noopener">GitHub</a></li>
+          <li><a href="https://www.npmjs.com/org/pocolente" target="_blank" rel="noopener">npm</a></li>
+          <li><a href="https://github.com/pocolente-dev/pocolente-qa#readme" target="_blank" rel="noopener">Docs</a></li>
+        </ul>
+        <div class="footer-legal">
+          MIT License &middot; Made with deliberate care.
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================================ SCRIPTS ================================ -->
+  <script>
+    // Nav scroll effect
+    const nav = document.getElementById('nav');
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          nav.classList.toggle('scrolled', window.scrollY > 40);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    });
+
+    // Scroll reveal with IntersectionObserver
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+    reveals.forEach(el => observer.observe(el));
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-selected', 'false');
+        });
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+        document.getElementById('tab-' + tab).classList.add('active');
+      });
+    });
+
+    // Copy buttons
+    const snippets = {
+      cli: `npx @pocolente/cli scan`,
+      action: `name: Pocolente QA
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pocolente-dev/pocolente-qa@v1`
+    };
+
+    document.querySelectorAll('.code-copy').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.target;
+        navigator.clipboard.writeText(snippets[key]).then(() => {
+          btn.textContent = 'Copied';
+          setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+        });
+      });
+    });
+  </script>
+
+</body>
+</html>
