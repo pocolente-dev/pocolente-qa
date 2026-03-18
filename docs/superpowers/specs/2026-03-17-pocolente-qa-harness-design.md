@@ -382,9 +382,11 @@ Pricing (tentative):
 
 **Goal:** Actual resource measurement for teams that want it.
 
+**Sandbox provider:** Alibaba OpenSandbox (Apache 2.0, open-sourced March 2026). Replaces the originally planned E2B.dev dependency. OpenSandbox is a general-purpose sandbox platform for AI applications with TypeScript SDK, supporting Firecracker MicroVMs, gVisor, and Kata Containers for strong isolation. Key advantages over E2B: free and self-hostable (no per-minute API costs, no vendor lock-in), Kubernetes-native for production scale, and deployable on EU infrastructure for GreenOps/CSRD alignment. GitHub: https://github.com/alibaba/OpenSandbox
+
 **Deliverables:**
 - Self-hosted runner support with RAPL/Scaphandre/Kepler documentation
-- E2B integration for metered sandbox execution
+- OpenSandbox integration for metered sandbox execution (self-hosted, free, Apache 2.0)
 - Resource comparison: CPU, memory, I/O, energy vs base branch
 - Scanner false-positive tuning, performance optimization (AST caching, incremental scan)
 
@@ -398,4 +400,4 @@ Choose based on user demand:
 - Agentic auto-fix (generate fix PRs)
 - Jira integration (findings -> tickets -> agent fixes)
 
-This stage is where the product begins evolving toward the full Pocolente QA Agentic Edition from the original PRD.
+This stage is where the product begins evolving toward the full Pocolente QA Agentic Edition from the original PRD. OpenSandbox provides the ephemeral sandbox execution layer described in the original PRD — AI agents write code, OpenSandbox executes it in isolated Firecracker MicroVMs, and the Pocolente Harness (Stages 0-3) verifies the output before human review.
