@@ -1,8 +1,18 @@
 {
   "name": "@pocolente/dashboard",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "private": true,
   "type": "module",
   "main": "dist/server.js",
+  "author": "Mohammad Asjad <asjad.august@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pocolente/pocolente-qa.git",
+    "directory": "packages/dashboard"
+  },
+  "homepage": "https://pocolente.com",
+  "bugs": { "url": "https://github.com/pocolente/pocolente-qa/issues" },
   "scripts": {
     "build": "tsup",
     "dev": "tsx src/server.ts",

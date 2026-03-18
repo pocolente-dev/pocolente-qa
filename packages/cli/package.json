@@ -1,9 +1,19 @@
 {
   "name": "@pocolente/cli",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
   "bin": { "pocolente": "dist/main.js" },
   "files": ["dist"],
+  "author": "Mohammad Asjad <asjad.august@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pocolente/pocolente-qa.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://pocolente.com",
+  "bugs": { "url": "https://github.com/pocolente/pocolente-qa/issues" },
+  "publishConfig": { "access": "public" },
   "scripts": { "build": "tsup", "test": "vitest run" },
   "dependencies": {
     "@pocolente/core": "workspace:*",

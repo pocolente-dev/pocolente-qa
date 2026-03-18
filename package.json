@@ -1,6 +1,14 @@
 {
   "name": "pocolente",
   "private": true,
+  "author": "Mohammad Asjad <asjad.august@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pocolente/pocolente-qa.git"
+  },
+  "homepage": "https://pocolente.com",
+  "bugs": { "url": "https://github.com/pocolente/pocolente-qa/issues" },
   "scripts": {
     "build": "pnpm -r build",
     "test": "vitest",
