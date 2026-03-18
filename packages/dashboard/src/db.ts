@@ -17,6 +17,10 @@ export function createDatabase(path: string): Database.Database {
       rcs_delta INTEGER NOT NULL DEFAULT 0,
       rcs_badge TEXT NOT NULL DEFAULT 'green',
       duration_ms REAL,
+      cpu_ms REAL,
+      peak_memory_mb REAL,
+      wall_clock_ms REAL,
+      sci_score REAL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -63,6 +67,10 @@ export interface ScanInput {
   rcsDelta: number;
   rcsBadge: string;
   durationMs: number;
+  cpuMs?: number;
+  peakMemoryMb?: number;
+  wallClockMs?: number;
+  sciScore?: number;
   findings: FindingInput[];
 }
 
@@ -84,8 +92,8 @@ export interface FindingInput {
 
 export function insertScan(db: Database.Database, input: ScanInput): number {
   const insertScanStmt = db.prepare(`
-    INSERT INTO scans (repo, pr_number, branch, commit_sha, status, finding_count, rcs_delta, rcs_badge, duration_ms)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO scans (repo, pr_number, branch, commit_sha, status, finding_count, rcs_delta, rcs_badge, duration_ms, cpu_ms, peak_memory_mb, wall_clock_ms, sci_score)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const insertFindingStmt = db.prepare(`
@@ -96,7 +104,8 @@ export function insertScan(db: Database.Database, input: ScanInput): number {
   const result = db.transaction(() => {
     const { lastInsertRowid } = insertScanStmt.run(
       input.repo, input.prNumber ?? null, input.branch ?? null, input.commitSha ?? null,
-      input.status, input.findingCount, input.rcsDelta, input.rcsBadge, input.durationMs
+      input.status, input.findingCount, input.rcsDelta, input.rcsBadge, input.durationMs,
+      input.cpuMs ?? null, input.peakMemoryMb ?? null, input.wallClockMs ?? null, input.sciScore ?? null
     );
     const scanId = Number(lastInsertRowid);
 
@@ -123,12 +132,17 @@ export interface ScanTrend {
   rcsBadge: string;
   prNumber: number | null;
   branch: string | null;
+  cpuMs: number | null;
+  peakMemoryMb: number | null;
+  wallClockMs: number | null;
+  sciScore: number | null;
 }
 
 export function getScanTrends(db: Database.Database, repo: string, limit: number): ScanTrend[] {
   return db.prepare(`
     SELECT id, created_at as createdAt, status, finding_count as findingCount,
-           rcs_delta as rcsDelta, rcs_badge as rcsBadge, pr_number as prNumber, branch
+           rcs_delta as rcsDelta, rcs_badge as rcsBadge, pr_number as prNumber, branch,
+           cpu_ms as cpuMs, peak_memory_mb as peakMemoryMb, wall_clock_ms as wallClockMs, sci_score as sciScore
     FROM scans WHERE repo = ? ORDER BY created_at DESC, id DESC LIMIT ?
   `).all(repo, limit) as ScanTrend[];
 }

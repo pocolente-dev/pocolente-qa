@@ -73,6 +73,21 @@ describe("getScanTrends", () => {
   });
 });
 
+describe("runtime metrics", () => {
+  it("stores and retrieves runtime metrics", () => {
+    const scanId = insertScan(db, {
+      repo: "owner/repo", status: "pass", findingCount: 0,
+      rcsDelta: 0, rcsBadge: "green", durationMs: 100,
+      cpuMs: 5000, peakMemoryMb: 256, sciScore: 0.042,
+      findings: [],
+    });
+    const trends = getScanTrends(db, "owner/repo", 10);
+    expect(trends[0].cpuMs).toBe(5000);
+    expect(trends[0].peakMemoryMb).toBe(256);
+    expect(trends[0].sciScore).toBe(0.042);
+  });
+});
+
 describe("getRcsTrend", () => {
   it("returns RCS data points for a repo", () => {
     insertScan(db, { repo: "owner/repo", status: "pass", findingCount: 0, rcsDelta: 0, rcsBadge: "green", durationMs: 100, findings: [] });
