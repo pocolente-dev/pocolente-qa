@@ -12,3 +12,7 @@ export { toSarif } from "./sarif.js";
 export type { SarifLog } from "./sarif.js";
 export { computeRcs, rcsBadge } from "./rcs.js";
 export type { RcsBadgeColor } from "./rcs.js";
+export { profileCommand } from "./profiler.js";
+export type { ProfileResult } from "./profiler.js";
+export { computeSci, computeSciDelta, formatSci } from "./sci.js";
+export type { SciInput, SciScore, SciDelta } from "./sci.js";
