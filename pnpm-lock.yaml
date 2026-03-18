@@ -61,6 +61,12 @@ importers:
         specifier: ^0.24.0
         version: 0.24.2
 
+  packages/scanner-correctness:
+    dependencies:
+      '@pocolente/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/scanner-security:
     dependencies:
       '@pocolente/core':

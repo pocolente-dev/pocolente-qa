@@ -1,0 +1,1 @@
+// @pocolente/scanner-correctness – placeholder
