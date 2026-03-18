@@ -11,7 +11,13 @@ import {
   parseDiff,
   toSarif,
 } from "@pocolente/core";
-import { SecretsScanner, OwaspScanner, ALL_OWASP_RULES, SupplyChainScanner } from "@pocolente/scanner-security";
+import { SecretsScanner, OwaspScanner, ALL_OWASP_RULES, SupplyChainScanner, PermissionsScanner } from "@pocolente/scanner-security";
+import {
+  GenerationQualityScanner,
+  DeadCodeScanner,
+  BehavioralDriftScanner,
+  CoverageDeltaScanner,
+} from "@pocolente/scanner-correctness";
 import { createGitHubClient } from "./github.js";
 
 async function run(): Promise<void> {
@@ -46,9 +52,16 @@ async function run(): Promise<void> {
 
     // Register scanners
     const scanners = [
+      // Security
       new SecretsScanner(),
       new OwaspScanner(ALL_OWASP_RULES),
       new SupplyChainScanner(),
+      new PermissionsScanner(),
+      // Correctness
+      new GenerationQualityScanner(),
+      new DeadCodeScanner(),
+      new BehavioralDriftScanner(),
+      new CoverageDeltaScanner(),
     ];
 
     // Run scan

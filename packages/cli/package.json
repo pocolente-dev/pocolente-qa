@@ -8,6 +8,7 @@
   "dependencies": {
     "@pocolente/core": "workspace:*",
     "@pocolente/scanner-security": "workspace:*",
+    "@pocolente/scanner-correctness": "workspace:*",
     "simple-git": "^3.27.0"
   }
 }

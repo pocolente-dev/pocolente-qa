@@ -51,6 +51,10 @@ export class PermissionsScanner implements Scanner {
           explanation:
             'Using `resources: ["*"]` grants access to all resource types. Prefer explicit resource names.',
           suggestion: "Replace wildcard resources with explicit resource names.",
+          cwe: "CWE-250",
+          owasp: "A01:2021",
+          estimatedEnergyImpact: null,
+          rcsDelta: null,
         });
       }
 
@@ -67,6 +71,10 @@ export class PermissionsScanner implements Scanner {
           explanation:
             'Using `verbs: ["*"]` grants all operations. Prefer explicit verbs.',
           suggestion: "Replace wildcard verbs with explicit verbs (e.g., get, list, watch).",
+          cwe: "CWE-250",
+          owasp: "A01:2021",
+          estimatedEnergyImpact: null,
+          rcsDelta: null,
         });
       }
 
@@ -83,6 +91,10 @@ export class PermissionsScanner implements Scanner {
           explanation:
             "Setting `runAsUser: 0` runs the container process as root, increasing blast radius.",
           suggestion: "Use a non-root UID (e.g., runAsUser: 1000) and set runAsNonRoot: true.",
+          cwe: "CWE-250",
+          owasp: "A05:2021",
+          estimatedEnergyImpact: null,
+          rcsDelta: null,
         });
       }
 
@@ -99,6 +111,10 @@ export class PermissionsScanner implements Scanner {
           explanation:
             "Setting `runAsNonRoot: false` allows the container to run as root.",
           suggestion: "Set runAsNonRoot: true to prevent root container execution.",
+          cwe: "CWE-250",
+          owasp: "A05:2021",
+          estimatedEnergyImpact: null,
+          rcsDelta: null,
         });
       }
     }
@@ -135,6 +151,10 @@ export class PermissionsScanner implements Scanner {
         explanation:
           "Without a USER instruction, Docker runs the container as root by default.",
         suggestion: "Add a non-root USER instruction (e.g., USER node or USER 1000).",
+        cwe: "CWE-250",
+        owasp: "A05:2021",
+        estimatedEnergyImpact: null,
+        rcsDelta: null,
       });
     } else if (lastUserLine) {
       const user = lastUserLine.value.toLowerCase();
@@ -149,6 +169,10 @@ export class PermissionsScanner implements Scanner {
           title: "Dockerfile final USER directive sets root",
           explanation: `The last USER directive sets the user to "${lastUserLine.value}", running the container as root.`,
           suggestion: "Switch to a non-root user at the end of the Dockerfile (e.g., USER node).",
+          cwe: "CWE-250",
+          owasp: "A05:2021",
+          estimatedEnergyImpact: null,
+          rcsDelta: null,
         });
       }
     }

@@ -3,7 +3,13 @@ import { simpleGit } from "simple-git";
 import {
   loadConfig, runScanners, filterFindings, deduplicateFindings, computeStatus, parseDiff, toSarif,
 } from "@pocolente/core";
-import { SecretsScanner, OwaspScanner, ALL_OWASP_RULES, SupplyChainScanner } from "@pocolente/scanner-security";
+import { SecretsScanner, OwaspScanner, ALL_OWASP_RULES, SupplyChainScanner, PermissionsScanner } from "@pocolente/scanner-security";
+import {
+  GenerationQualityScanner,
+  DeadCodeScanner,
+  BehavioralDriftScanner,
+  CoverageDeltaScanner,
+} from "@pocolente/scanner-correctness";
 import { formatFindings } from "./formatter.js";
 import { initConfig } from "./init.js";
 
@@ -64,9 +70,16 @@ async function main(): Promise<void> {
   const context = { diff, config, repoRoot, baseBranch, prBranch: "HEAD" };
 
   const scanners = [
+    // Security
     new SecretsScanner(),
     new OwaspScanner(ALL_OWASP_RULES),
     new SupplyChainScanner(),
+    new PermissionsScanner(),
+    // Correctness
+    new GenerationQualityScanner(),
+    new DeadCodeScanner(),
+    new BehavioralDriftScanner(),
+    new CoverageDeltaScanner(),
   ];
 
   const startTime = performance.now();
