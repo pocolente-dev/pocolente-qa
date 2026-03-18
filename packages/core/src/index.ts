@@ -8,3 +8,5 @@ export type { ScanStatus } from "./severity.js";
 export { renderComment } from "./renderer.js";
 export { runScanners } from "./orchestrator.js";
 export { parseDiff } from "./diff.js";
+export { toSarif } from "./sarif.js";
+export type { SarifLog } from "./sarif.js";
