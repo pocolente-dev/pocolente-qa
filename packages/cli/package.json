@@ -9,6 +9,7 @@
     "@pocolente/core": "workspace:*",
     "@pocolente/scanner-security": "workspace:*",
     "@pocolente/scanner-correctness": "workspace:*",
+    "@pocolente/scanner-greenops": "workspace:*",
     "simple-git": "^3.27.0"
   }
 }

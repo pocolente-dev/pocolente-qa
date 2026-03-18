@@ -18,6 +18,8 @@ import {
   BehavioralDriftScanner,
   CoverageDeltaScanner,
 } from "@pocolente/scanner-correctness";
+import { ComplexityScanner, ResourceScanner, InfraBloatScanner } from "@pocolente/scanner-greenops";
+import { computeRcs, rcsBadge } from "@pocolente/core";
 import { createGitHubClient } from "./github.js";
 
 async function run(): Promise<void> {
@@ -62,6 +64,10 @@ async function run(): Promise<void> {
       new DeadCodeScanner(),
       new BehavioralDriftScanner(),
       new CoverageDeltaScanner(),
+      // GreenOps
+      new ComplexityScanner(),
+      new ResourceScanner(),
+      new InfraBloatScanner(),
     ];
 
     // Run scan
@@ -76,8 +82,13 @@ async function run(): Promise<void> {
 
     const status = computeStatus(allFindings, config.blockPrOn);
 
+    // Compute RCS
+    const rcsDelta = computeRcs(allFindings);
+    const badge = rcsBadge(rcsDelta, config.greenops.rcs.degradationThreshold);
+    const rcs = { delta: rcsDelta, badge };
+
     // Post results
-    const comment = renderComment(allFindings, status, durationMs);
+    const comment = renderComment(allFindings, status, durationMs, rcs);
     const gh = createGitHubClient(token);
     await gh.postComment(comment);
     await gh.setCommitStatus(

@@ -41002,7 +41002,12 @@ function renderFinding(finding) {
   lines.push("</details>");
   return lines.join("\n");
 }
-function renderComment(findings, status, durationMs) {
+var RCS_BADGE_LABEL = {
+  green: "\u{1F7E2} improving",
+  yellow: "\u{1F7E1} stable",
+  red: "\u{1F534} degrading"
+};
+function renderComment(findings, status, durationMs, rcs) {
   const sortedFindings = [...findings].sort(
     (a, b) => SEVERITY_ORDER2[b.severity] - SEVERITY_ORDER2[a.severity]
   );
@@ -41031,7 +41036,13 @@ function renderComment(findings, status, durationMs) {
       parts.push("");
     }
   }
-  parts.push(`<sub>Scanned in ${formatDuration(durationMs)}</sub>`);
+  if (rcs) {
+    const badgeLabel = RCS_BADGE_LABEL[rcs.badge] ?? rcs.badge;
+    const deltaStr = rcs.delta > 0 ? `+${rcs.delta}` : `${rcs.delta}`;
+    parts.push(`<sub>RCS: ${badgeLabel} (${deltaStr}) \xB7 Scanned in ${formatDuration(durationMs)}</sub>`);
+  } else {
+    parts.push(`<sub>Scanned in ${formatDuration(durationMs)}</sub>`);
+  }
   return parts.join("\n");
 }
 function withTimeout(promise, ms, message) {
@@ -41163,6 +41174,17 @@ function toSarif(findings, toolName, toolVersion) {
       }
     ]
   };
+}
+function computeRcs(findings) {
+  return findings.filter((f) => f.layer === "greenops" && f.rcsDelta).reduce((sum, f) => {
+    const delta = parseInt(f.rcsDelta, 10);
+    return sum + (isNaN(delta) ? 0 : delta);
+  }, 0);
+}
+function rcsBadge(delta, threshold) {
+  if (delta <= 0) return "green";
+  if (delta <= threshold) return "yellow";
+  return "red";
 }
 
 // ../scanner-security/dist/index.js
@@ -42470,6 +42492,341 @@ var CoverageDeltaScanner = class {
   }
 };
 
+// ../scanner-greenops/dist/index.js
+var TS_JS_EXTENSIONS2 = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
+var LOOP_OPEN_RE = /(?:(?:^|\s)(?:for|while)\s*\(|\.(?:forEach|map|reduce)\s*\()/;
+var BLOCK_CLOSE_RE = /^\s*\}[\s;)]*$/;
+var QUERY_RE = /\.(?:query|findOne|findUnique|findFirst|execute)\s*\(/;
+var STRING_CONCAT_RE2 = /\+=\s/;
+var ComplexityScanner = class {
+  id = "complexity-scanner";
+  name = "Algorithmic Complexity Scanner";
+  layer = "greenops";
+  async scan(context2) {
+    if (!context2.config.greenops.complexity.enabled) {
+      return [];
+    }
+    const severity = context2.config.greenops.complexity.severity;
+    const findings = [];
+    for (const file of context2.diff) {
+      if (!TS_JS_EXTENSIONS2.test(file.path)) {
+        continue;
+      }
+      let loopDepth = 0;
+      const loopIndentStack = [];
+      for (let i = 0; i < file.added.length; i++) {
+        const line = file.added[i];
+        const trimmed2 = line.trimStart();
+        const indent = line.length - trimmed2.length;
+        if (BLOCK_CLOSE_RE.test(line) && loopDepth > 0) {
+          while (loopIndentStack.length > 0 && loopIndentStack[loopIndentStack.length - 1] >= indent) {
+            loopIndentStack.pop();
+            loopDepth--;
+          }
+        }
+        const isLoopOpen = LOOP_OPEN_RE.test(line);
+        if (isLoopOpen) {
+          if (loopDepth >= 1) {
+            findings.push({
+              layer: "greenops",
+              scanner: "complexity-scanner",
+              severity,
+              confidence: 0.85,
+              file: file.path,
+              line: String(i + 1),
+              title: "Nested loop detected (O(n\xB2) complexity)",
+              explanation: "A nested loop was detected in the added lines. Nested loops result in O(n\xB2) or worse time complexity, which can cause significant CPU and energy waste on large datasets.",
+              suggestion: "Consider refactoring to use a Map/Set for lookups, or flatten the iteration to reduce complexity to O(n).",
+              cwe: null,
+              owasp: null,
+              estimatedEnergyImpact: "high",
+              rcsDelta: "+5"
+            });
+          }
+          loopDepth++;
+          loopIndentStack.push(indent);
+          continue;
+        }
+        if (loopDepth >= 1 && QUERY_RE.test(line)) {
+          findings.push({
+            layer: "greenops",
+            scanner: "complexity-scanner",
+            severity,
+            confidence: 0.9,
+            file: file.path,
+            line: String(i + 1),
+            title: "N+1 query pattern: database call inside loop",
+            explanation: "A database query was detected inside a loop. This N+1 pattern causes one database round-trip per iteration, leading to O(n) queries instead of O(1), which is extremely wasteful.",
+            suggestion: "Batch the queries using an IN clause or load all required records before the loop (e.g., use findMany with an id list).",
+            cwe: null,
+            owasp: null,
+            estimatedEnergyImpact: "high",
+            rcsDelta: "+10"
+          });
+        }
+        if (loopDepth >= 1 && STRING_CONCAT_RE2.test(line)) {
+          findings.push({
+            layer: "greenops",
+            scanner: "complexity-scanner",
+            severity,
+            confidence: 0.75,
+            file: file.path,
+            line: String(i + 1),
+            title: "Quadratic string concatenation in loop",
+            explanation: "String concatenation using += inside a loop creates a new string on every iteration, resulting in O(n\xB2) memory allocations and copies.",
+            suggestion: "Collect strings in an array and join them after the loop: `parts.push(item); result = parts.join('');`",
+            cwe: null,
+            owasp: null,
+            estimatedEnergyImpact: "medium",
+            rcsDelta: "+2"
+          });
+        }
+      }
+    }
+    return findings;
+  }
+};
+var TS_JS_EXTENSIONS22 = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
+var SYNC_FS_RE = /\b(?:readFileSync|writeFileSync|accessSync|statSync|readdirSync|mkdirSync)\s*\(/;
+var ASYNC_CONTEXT_RE = /\basync\s+(?:function|\(|[a-zA-Z_$])|\bawait\s+/;
+var INFINITE_LOOP_RE = /\bwhile\s*\(\s*(?:true|1)\s*\)|\bfor\s*\(\s*;/;
+var PUSH_RE = /\.push\s*\(/;
+var ResourceScanner = class {
+  id = "resource-scanner";
+  name = "Resource Allocation Scanner";
+  layer = "greenops";
+  async scan(context2) {
+    if (!context2.config.greenops.resources.enabled) {
+      return [];
+    }
+    const severity = context2.config.greenops.resources.severity;
+    const findings = [];
+    for (const file of context2.diff) {
+      if (!TS_JS_EXTENSIONS22.test(file.path)) {
+        continue;
+      }
+      const fileText = file.added.join("\n");
+      const hasAsyncContext = ASYNC_CONTEXT_RE.test(fileText);
+      let infiniteLoopDepth = 0;
+      const loopBraceStack = [];
+      for (let i = 0; i < file.added.length; i++) {
+        const line = file.added[i];
+        if (INFINITE_LOOP_RE.test(line)) {
+          infiniteLoopDepth++;
+          loopBraceStack.push(countOpenBraces(line) - countCloseBraces(line));
+        } else if (infiniteLoopDepth > 0) {
+          const net = countOpenBraces(line) - countCloseBraces(line);
+          if (loopBraceStack.length > 0) {
+            loopBraceStack[loopBraceStack.length - 1] += net;
+            if (loopBraceStack[loopBraceStack.length - 1] <= -1) {
+              loopBraceStack.pop();
+              infiniteLoopDepth--;
+            }
+          }
+        }
+        if (hasAsyncContext && SYNC_FS_RE.test(line)) {
+          const match = line.match(SYNC_FS_RE);
+          const method = match ? match[0].replace(/\s*\($/, "") : "sync I/O";
+          findings.push({
+            layer: "greenops",
+            scanner: "resource-scanner",
+            severity,
+            confidence: 0.95,
+            file: file.path,
+            line: String(i + 1),
+            title: `Sync I/O (${method}) used in async context`,
+            explanation: `${method} blocks the Node.js event loop while waiting for I/O to complete. In an async function this prevents other requests from being processed, wasting CPU time and increasing energy consumption.`,
+            suggestion: `Replace ${method} with its async equivalent (e.g., fs.promises.readFile / fs.readFile) and await the result to keep the event loop free.`,
+            cwe: null,
+            owasp: null,
+            estimatedEnergyImpact: "medium",
+            rcsDelta: "+3"
+          });
+        }
+        if (infiniteLoopDepth > 0 && PUSH_RE.test(line)) {
+          findings.push({
+            layer: "greenops",
+            scanner: "resource-scanner",
+            severity,
+            confidence: 0.8,
+            file: file.path,
+            line: String(i + 1),
+            title: "Unbounded array growth inside infinite loop",
+            explanation: "An array .push() was detected inside a while(true) or for(;;) loop. Without a size bound this causes unbounded memory growth that will eventually exhaust heap memory.",
+            suggestion: "Add a size cap (e.g., if (items.length >= MAX) break;), use a bounded ring-buffer, or process items as they arrive rather than accumulating them.",
+            cwe: null,
+            owasp: null,
+            estimatedEnergyImpact: "medium",
+            rcsDelta: "+3"
+          });
+        }
+      }
+    }
+    return findings;
+  }
+};
+function countOpenBraces(line) {
+  return (line.match(/\{/g) ?? []).length;
+}
+function countCloseBraces(line) {
+  return (line.match(/\}/g) ?? []).length;
+}
+var BLOATED_IMAGES = {
+  "node": { sizeMb: 900, alternative: "node:{version}-alpine" },
+  "python": { sizeMb: 900, alternative: "python:{version}-slim" },
+  "ruby": { sizeMb: 850, alternative: "ruby:{version}-slim" },
+  "golang": { sizeMb: 800, alternative: "golang:{version}-alpine" },
+  "openjdk": { sizeMb: 600, alternative: "eclipse-temurin:{version}-jre-alpine" },
+  "java": { sizeMb: 600, alternative: "eclipse-temurin:{version}-jre-alpine" }
+};
+var LEAN_TAGS = ["alpine", "slim", "distroless", "scratch", "buster-slim", "bullseye-slim"];
+function isDockerfile2(path) {
+  return /(?:^|[\\/])Dockerfile(?:\.[a-zA-Z0-9._-]+)?$/.test(path);
+}
+function isK8sYaml(path) {
+  return /\.(yaml|yml)$/.test(path) && // k8s manifests often live under k8s/, deploy/, manifests/, etc.
+  // We match broadly and rely on content checks.
+  true;
+}
+function isDockerCompose(path) {
+  return /docker-compose(?:\.[a-zA-Z0-9._-]+)?\.(yaml|yml)$/.test(path);
+}
+var InfraBloatScanner = class {
+  id = "infra-bloat-scanner";
+  name = "Infrastructure Bloat Scanner";
+  layer = "greenops";
+  async scan(context2) {
+    if (!context2.config.greenops.infrastructure.enabled) {
+      return [];
+    }
+    const severity = context2.config.greenops.infrastructure.severity;
+    const findings = [];
+    for (const file of context2.diff) {
+      if (isDockerfile2(file.path)) {
+        findings.push(...this.scanDockerfile(file.path, file.added, severity));
+      } else if (isDockerCompose(file.path)) {
+        findings.push(...this.scanDockerCompose(file.path, file.added, severity));
+      } else if (isK8sYaml(file.path)) {
+        findings.push(...this.scanK8sYaml(file.path, file.added, severity));
+      }
+    }
+    return findings;
+  }
+  // ─── Dockerfile analysis ───────────────────────────────────────────────────
+  scanDockerfile(filePath, lines, severity) {
+    const findings = [];
+    const FROM_RE = /^\s*FROM\s+([^\s]+)/i;
+    for (let i = 0; i < lines.length; i++) {
+      const match = lines[i].match(FROM_RE);
+      if (!match) continue;
+      const imageRef = match[1];
+      const withoutDigest = imageRef.split("@")[0];
+      const colonIdx = withoutDigest.indexOf(":");
+      const imageName = colonIdx === -1 ? withoutDigest : withoutDigest.slice(0, colonIdx);
+      const tag = colonIdx === -1 ? "" : withoutDigest.slice(colonIdx + 1);
+      const isLean = LEAN_TAGS.some((t) => tag.toLowerCase().includes(t));
+      if (isLean) continue;
+      const info2 = BLOATED_IMAGES[imageName.toLowerCase()];
+      if (tag === "latest") {
+        const suggestion = info2 ? `Use a pinned, minimal tag instead. Prefer ${info2.alternative.replace("{version}", "LTS")} to reduce image size from ~${info2.sizeMb} MB to ~50\u2013100 MB and avoid unpredictable updates.` : `Pin to a specific version tag and prefer a minimal variant (e.g., -alpine or -slim) to reduce image size and avoid unpredictable updates.`;
+        findings.push({
+          layer: "greenops",
+          scanner: "infra-bloat-scanner",
+          severity,
+          confidence: 0.95,
+          file: filePath,
+          line: String(i + 1),
+          title: `Docker image uses :latest tag (${imageName}:latest)`,
+          explanation: "Using :latest is unpredictable and often resolves to a full-fat image that is hundreds of MB larger than necessary.",
+          suggestion,
+          cwe: null,
+          owasp: null,
+          estimatedEnergyImpact: "medium",
+          rcsDelta: "+2"
+        });
+        continue;
+      }
+      if (info2) {
+        findings.push({
+          layer: "greenops",
+          scanner: "infra-bloat-scanner",
+          severity,
+          confidence: 0.9,
+          file: filePath,
+          line: String(i + 1),
+          title: `Bloated Docker base image: ${imageName}:${tag || "(untagged)"} (~${info2.sizeMb} MB)`,
+          explanation: `The base image ${imageName} without an alpine/slim variant is approximately ${info2.sizeMb} MB. Larger images consume more bandwidth, storage, and energy in CI and deployment pipelines.`,
+          suggestion: `Switch to ${info2.alternative.replace("{version}", tag || "LTS")} to reduce the image size from ~${info2.sizeMb} MB to ~50\u2013100 MB. This reduces CI pull times, storage costs, and energy use.`,
+          cwe: null,
+          owasp: null,
+          estimatedEnergyImpact: "medium",
+          rcsDelta: "+2"
+        });
+      }
+    }
+    return findings;
+  }
+  // ─── K8s YAML analysis ────────────────────────────────────────────────────
+  scanK8sYaml(filePath, lines, severity) {
+    const text = lines.join("\n");
+    if (!text.includes("containers:")) {
+      return [];
+    }
+    const hasResources = /\bresources\s*:/.test(text);
+    const hasLimits = /\blimits\s*:/.test(text);
+    if (hasResources && hasLimits) {
+      return [];
+    }
+    return [
+      {
+        layer: "greenops",
+        scanner: "infra-bloat-scanner",
+        severity,
+        confidence: 0.85,
+        file: filePath,
+        line: "1",
+        title: "K8s containers missing resource limits",
+        explanation: "Kubernetes containers without CPU/memory limits can consume unbounded resources, causing noisy-neighbour effects, pod evictions, and wasted energy from over-provisioning.",
+        suggestion: "Add a resources.limits section to each container spec:\n  resources:\n    limits:\n      cpu: '500m'\n      memory: '256Mi'",
+        cwe: null,
+        owasp: null,
+        estimatedEnergyImpact: "medium",
+        rcsDelta: "+2"
+      }
+    ];
+  }
+  // ─── docker-compose analysis ──────────────────────────────────────────────
+  scanDockerCompose(filePath, lines, severity) {
+    const text = lines.join("\n");
+    if (!text.includes("services:")) {
+      return [];
+    }
+    const hasDeploy = /\bdeploy\s*:/.test(text);
+    const hasResources = /\bresources\s*:/.test(text);
+    const hasLimits = /\blimits\s*:/.test(text);
+    if (hasDeploy && hasResources && hasLimits || hasResources && hasLimits) {
+      return [];
+    }
+    return [
+      {
+        layer: "greenops",
+        scanner: "infra-bloat-scanner",
+        severity,
+        confidence: 0.8,
+        file: filePath,
+        line: "1",
+        title: "docker-compose services missing resource limits",
+        explanation: "docker-compose services without resource limits can consume unbounded CPU and memory, causing host resource exhaustion and unnecessary energy consumption.",
+        suggestion: "Add a deploy.resources.limits section to each service:\n  deploy:\n    resources:\n      limits:\n        cpus: '0.5'\n        memory: 256M",
+        cwe: null,
+        owasp: null,
+        estimatedEnergyImpact: "medium",
+        rcsDelta: "+2"
+      }
+    ];
+  }
+};
+
 // src/github.ts
 var github = __toESM(require_github(), 1);
 function createGitHubClient(token) {
@@ -42555,7 +42912,11 @@ async function run() {
       new GenerationQualityScanner(),
       new DeadCodeScanner(),
       new BehavioralDriftScanner(),
-      new CoverageDeltaScanner()
+      new CoverageDeltaScanner(),
+      // GreenOps
+      new ComplexityScanner(),
+      new ResourceScanner(),
+      new InfraBloatScanner()
     ];
     const startTime = performance.now();
     const results = await runScanners(scanners, context2);
@@ -42564,7 +42925,10 @@ async function run() {
     allFindings = deduplicateFindings(allFindings);
     allFindings = filterFindings(allFindings, config.severityThreshold);
     const status = computeStatus(allFindings, config.blockPrOn);
-    const comment = renderComment(allFindings, status, durationMs);
+    const rcsDelta = computeRcs(allFindings);
+    const badge = rcsBadge(rcsDelta, config.greenops.rcs.degradationThreshold);
+    const rcs = { delta: rcsDelta, badge };
+    const comment = renderComment(allFindings, status, durationMs, rcs);
     const gh = createGitHubClient(token);
     await gh.postComment(comment);
     await gh.setCommitStatus(

@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 import { simpleGit } from "simple-git";
 import {
   loadConfig, runScanners, filterFindings, deduplicateFindings, computeStatus, parseDiff, toSarif,
+  computeRcs, rcsBadge,
 } from "@pocolente/core";
 import { SecretsScanner, OwaspScanner, ALL_OWASP_RULES, SupplyChainScanner, PermissionsScanner } from "@pocolente/scanner-security";
 import {
@@ -10,6 +11,7 @@ import {
   BehavioralDriftScanner,
   CoverageDeltaScanner,
 } from "@pocolente/scanner-correctness";
+import { ComplexityScanner, ResourceScanner, InfraBloatScanner } from "@pocolente/scanner-greenops";
 import { formatFindings } from "./formatter.js";
 import { initConfig } from "./init.js";
 
@@ -80,6 +82,10 @@ async function main(): Promise<void> {
     new DeadCodeScanner(),
     new BehavioralDriftScanner(),
     new CoverageDeltaScanner(),
+    // GreenOps
+    new ComplexityScanner(),
+    new ResourceScanner(),
+    new InfraBloatScanner(),
   ];
 
   const startTime = performance.now();
@@ -92,6 +98,11 @@ async function main(): Promise<void> {
 
   const status = computeStatus(allFindings, config.blockPrOn);
 
+  // Compute RCS
+  const rcsDelta = computeRcs(allFindings);
+  const badge = rcsBadge(rcsDelta, config.greenops.rcs.degradationThreshold);
+  const rcs = { delta: rcsDelta, badge };
+
   if (args.sarif) {
     const sarif = toSarif(allFindings, "pocolente-qa", "0.0.1");
     console.log(JSON.stringify(sarif, null, 2));
@@ -99,7 +110,7 @@ async function main(): Promise<void> {
   }
 
   if (args.format === "json") {
-    console.log(JSON.stringify({ status, findings: allFindings, durationMs }, null, 2));
+    console.log(JSON.stringify({ status, findings: allFindings, durationMs, rcs }, null, 2));
   } else {
     console.log(formatFindings(allFindings, status, durationMs));
   }
