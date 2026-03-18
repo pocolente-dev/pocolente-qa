@@ -1,4 +1,5 @@
 name: "Pocolente QA"
+author: "Mohammad Asjad"
 description: "CI/CD quality gate: correctness, security, and energy efficiency scanning"
 branding:
   icon: "eye"

@@ -10,7 +10,7 @@
 Generate with nanobanana:
 "A minimal, elegant banner illustration for an open-source developer tool called Pocolente QA. The concept is 'festina lente' (make haste slowly). Show a stylized magnifying glass or lens examining code, with three subtle colored layers representing security (red/coral), correctness (blue), and energy efficiency (green). Clean white background, modern flat design, no text in the image, wide aspect ratio suitable for a GitHub README hero banner (1280x400)."
 -->
-![Pocolente QA Hero Banner](docs/images/hero-banner.png)
+<!-- ![Pocolente QA Hero Banner](docs/images/hero-banner.png) -->
 
 ---
 
@@ -93,7 +93,7 @@ The action posts a structured PR comment with findings grouped by severity, sets
 Generate with nanobanana:
 "A realistic screenshot mockup of a GitHub pull request comment from a bot called Pocolente QA. The comment shows a summary table with three rows: Security (green checkmark, 0 findings), Correctness (yellow warning, 2 findings), GreenOps (red X, 1 finding). Below is a collapsible finding detail showing an N+1 query detected in src/services/recommendation.ts with a code diff suggestion. Dark theme GitHub UI, clean typography, realistic PR comment styling (1200x700)."
 -->
-![PR Comment Example](docs/images/pr-comment-example.png)
+<!-- ![PR Comment Example](docs/images/pr-comment-example.png) -->
 
 ## Configuration
 
@@ -179,7 +179,7 @@ Where **E** = energy consumed (estimated from complexity proxies or measured via
 Generate with nanobanana:
 "A terminal screenshot showing the output of a CLI tool called 'pocolente scan'. Dark terminal background (e.g. Dracula or One Dark theme). The output shows colored scan results: a green 'Security: PASS' line, a yellow 'Correctness: 2 warnings' line with indented findings, and a red 'GreenOps: 1 block' line with an N+1 query finding. At the bottom, a summary line showing 'SCI delta: +0.08 per request' with a small bar chart. Clean monospace font, realistic terminal styling (1000x600)."
 -->
-![CLI Output](docs/images/cli-output.png)
+<!-- ![CLI Output](docs/images/cli-output.png) -->
 
 ## Architecture
 
@@ -204,7 +204,7 @@ Built with TypeScript, pnpm workspaces, Zod, tree-sitter, Octokit, and Vitest.
 Generate with nanobanana:
 "A clean architecture diagram for a monorepo called Pocolente QA. Show 7 package boxes arranged in layers: at the top, 'github-action' and 'cli' side by side as entry points. In the middle layer, three scanner packages side by side: 'scanner-security' (coral), 'scanner-correctness' (blue), 'scanner-greenops' (green). At the bottom, 'core' as the foundation that all packages depend on. A 'dashboard' package sits to the side connected to core. Arrows flow downward showing dependencies. Minimal flat design, white background, subtle drop shadows, modern developer documentation style (1000x600)."
 -->
-![Architecture Diagram](docs/images/architecture-diagram.png)
+<!-- ![Architecture Diagram](docs/images/architecture-diagram.png) -->
 
 ## Contributing
 
