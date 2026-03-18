@@ -1,4 +1,5 @@
 import * as core from "@actions/core";
+import * as github from "@actions/github";
 import { writeFileSync } from "node:fs";
 import { simpleGit } from "simple-git";
 import {
@@ -103,6 +104,57 @@ async function run(): Promise<void> {
       const sarif = toSarif(allFindings, "pocolente-qa", "0.0.1");
       writeFileSync("pocolente-results.sarif", JSON.stringify(sarif, null, 2));
       core.info("SARIF report written to pocolente-results.sarif");
+    }
+
+    // Post results to dashboard if configured
+    if (config.reporting.dashboardUrl) {
+      try {
+        const ctx = github.context;
+        const dashboardBody = {
+          repo: `${ctx.repo.owner}/${ctx.repo.repo}`,
+          prNumber: ctx.payload.pull_request?.number,
+          branch: process.env.GITHUB_HEAD_REF,
+          commitSha: ctx.payload.pull_request?.head?.sha ?? ctx.sha,
+          status,
+          findingCount: allFindings.length,
+          rcsDelta: rcsDelta,
+          rcsBadge: badge,
+          durationMs,
+          findings: allFindings.map(f => ({
+            layer: f.layer,
+            scanner: f.scanner,
+            severity: f.severity,
+            confidence: f.confidence,
+            file: f.file,
+            line: f.line,
+            title: f.title,
+            explanation: f.explanation,
+            suggestion: f.suggestion,
+            cwe: f.cwe,
+            owasp: f.owasp,
+            energyImpact: f.estimatedEnergyImpact,
+            rcsDelta: f.rcsDelta,
+          })),
+        };
+
+        const dashboardRes = await fetch(`${config.reporting.dashboardUrl}/api/v1/scans`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Pocolente-Key": config.reporting.dashboardApiKey,
+          },
+          body: JSON.stringify(dashboardBody),
+          signal: AbortSignal.timeout(10000),
+        });
+
+        if (dashboardRes.ok) {
+          core.info("Scan results posted to Pocolente Dashboard");
+        } else {
+          core.warning(`Dashboard API returned ${dashboardRes.status}`);
+        }
+      } catch (err) {
+        core.warning(`Failed to post to dashboard: ${err instanceof Error ? err.message : String(err)}`);
+      }
     }
 
     // Output
