@@ -1,26 +1,31 @@
 import { resolve } from "node:path";
 import { simpleGit } from "simple-git";
 import {
-  loadConfig, runScanners, filterFindings, deduplicateFindings, computeStatus, parseDiff,
+  loadConfig, runScanners, filterFindings, deduplicateFindings, computeStatus, parseDiff, toSarif,
 } from "@pocolente/core";
-import { SecretsScanner } from "@pocolente/scanner-security";
+import { SecretsScanner, OwaspScanner, ALL_OWASP_RULES, SupplyChainScanner } from "@pocolente/scanner-security";
 import { formatFindings } from "./formatter.js";
+import { initConfig } from "./init.js";
 
 interface CliArgs {
+  command: "scan" | "init";
   path: string;
   diff?: string;
   layer?: string;
   format: "text" | "json";
+  sarif: boolean;
 }
 
 function parseArgs(argv: string[]): CliArgs {
   const args = argv.slice(2);
-  const result: CliArgs = { path: ".", format: "text" };
+  const result: CliArgs = { command: "scan", path: ".", format: "text", sarif: false };
   let i = 0;
   while (i < args.length) {
-    if (args[i] === "--diff" && args[i + 1]) { result.diff = args[i + 1]; i += 2; }
+    if (args[i] === "init") { result.command = "init"; i += 1; }
+    else if (args[i] === "--diff" && args[i + 1]) { result.diff = args[i + 1]; i += 2; }
     else if (args[i] === "--layer" && args[i + 1]) { result.layer = args[i + 1]; i += 2; }
     else if (args[i] === "--format" && args[i + 1]) { result.format = args[i + 1] as "text" | "json"; i += 2; }
+    else if (args[i] === "--sarif") { result.sarif = true; i += 1; }
     else if (args[i] === "scan") { i += 1; }
     else if (!args[i].startsWith("--")) { result.path = args[i]; i += 1; }
     else { i += 1; }
@@ -30,6 +35,14 @@ function parseArgs(argv: string[]): CliArgs {
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv);
+
+  // Handle init command
+  if (args.command === "init") {
+    const result = await initConfig(process.cwd());
+    console.log(result.message);
+    process.exit(result.created ? 0 : 1);
+  }
+
   const repoRoot = resolve(args.path);
   const configPath = resolve(repoRoot, ".pocolente.yml");
 
@@ -50,7 +63,11 @@ async function main(): Promise<void> {
   const diff = parseDiff(diffOutput);
   const context = { diff, config, repoRoot, baseBranch, prBranch: "HEAD" };
 
-  const scanners = [new SecretsScanner()];
+  const scanners = [
+    new SecretsScanner(),
+    new OwaspScanner(ALL_OWASP_RULES),
+    new SupplyChainScanner(),
+  ];
 
   const startTime = performance.now();
   const results = await runScanners(scanners, context);
@@ -61,6 +78,12 @@ async function main(): Promise<void> {
   allFindings = filterFindings(allFindings, config.severityThreshold);
 
   const status = computeStatus(allFindings, config.blockPrOn);
+
+  if (args.sarif) {
+    const sarif = toSarif(allFindings, "pocolente-qa", "0.0.1");
+    console.log(JSON.stringify(sarif, null, 2));
+    process.exit(status === "block" ? 1 : 0);
+  }
 
   if (args.format === "json") {
     console.log(JSON.stringify({ status, findings: allFindings, durationMs }, null, 2));
