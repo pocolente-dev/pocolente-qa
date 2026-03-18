@@ -65,13 +65,20 @@ function renderFinding(finding: Finding): string {
   return lines.join("\n");
 }
 
+const RCS_BADGE_LABEL: Record<string, string> = {
+  green: "🟢 improving",
+  yellow: "🟡 stable",
+  red: "🔴 degrading",
+};
+
 /**
  * Renders a GitHub PR comment in Markdown with the "Lens View" UX.
  */
 export function renderComment(
   findings: Finding[],
   status: ScanStatus,
-  durationMs: number
+  durationMs: number,
+  rcs?: { delta: number; badge: string }
 ): string {
   const sortedFindings = [...findings].sort(
     (a, b) => SEVERITY_ORDER[b.severity] - SEVERITY_ORDER[a.severity]
@@ -109,7 +116,13 @@ export function renderComment(
     }
   }
 
-  parts.push(`<sub>Scanned in ${formatDuration(durationMs)}</sub>`);
+  if (rcs) {
+    const badgeLabel = RCS_BADGE_LABEL[rcs.badge] ?? rcs.badge;
+    const deltaStr = rcs.delta > 0 ? `+${rcs.delta}` : `${rcs.delta}`;
+    parts.push(`<sub>RCS: ${badgeLabel} (${deltaStr}) · Scanned in ${formatDuration(durationMs)}</sub>`);
+  } else {
+    parts.push(`<sub>Scanned in ${formatDuration(durationMs)}</sub>`);
+  }
 
   return parts.join("\n");
 }

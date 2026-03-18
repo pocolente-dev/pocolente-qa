@@ -10,3 +10,5 @@ export { runScanners } from "./orchestrator.js";
 export { parseDiff } from "./diff.js";
 export { toSarif } from "./sarif.js";
 export type { SarifLog } from "./sarif.js";
+export { computeRcs, rcsBadge } from "./rcs.js";
+export type { RcsBadgeColor } from "./rcs.js";
