@@ -94,4 +94,38 @@ describe("SecretsScanner", () => {
     const findings = await scanner.scan(ctx);
     expect(findings.length).toBe(0);
   });
+
+  it("detects high-entropy strings via entropy fallback", async () => {
+    const ctx = makeContext([
+      makeDiff("src/config.ts", [
+        'const apiToken = "xK9mB2pL7wQ4vR8nF3jZ5cH1tY6uE0aGdS";',
+      ]),
+    ]);
+    const findings = await scanner.scan(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0].title).toContain("High-entropy");
+    expect(findings[0].confidence).toBeGreaterThanOrEqual(0.8);
+    expect(findings[0].confidence).toBeLessThanOrEqual(0.85);
+  });
+
+  it("does not flag low-entropy strings", async () => {
+    const ctx = makeContext([
+      makeDiff("src/config.ts", [
+        'const message = "This is a normal long string with low entropy value";',
+      ]),
+    ]);
+    const findings = await scanner.scan(ctx);
+    expect(findings).toHaveLength(0);
+  });
+
+  it("prefers pattern match over entropy match on same line", async () => {
+    const ctx = makeContext([
+      makeDiff("src/config.ts", [
+        'const key = "AKIAIOSFODNN7EXAMPLE";',
+      ]),
+    ]);
+    const findings = await scanner.scan(ctx);
+    expect(findings).toHaveLength(1);
+    expect(findings[0].title).toContain("AWS");
+  });
 });
