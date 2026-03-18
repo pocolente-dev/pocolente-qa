@@ -74,6 +74,13 @@ if (process.argv[1]?.endsWith("server.ts") || process.argv[1]?.endsWith("server.
   const port = Number(process.env.PORT ?? 3000);
 
   const { serve } = await import("@hono/node-server");
+  const { serveStatic } = await import("@hono/node-server/serve-static");
+
+  // Serve frontend static files
+  app.use("/*", serveStatic({ root: "./web/dist" }));
+  // SPA fallback
+  app.get("*", serveStatic({ path: "./web/dist/index.html" }));
+
   serve({ fetch: app.fetch, port });
   console.log(`Pocolente Dashboard running on http://localhost:${port}`);
 }

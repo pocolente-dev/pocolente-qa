@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+:root {
+  /* Primary: teal-green (shifted from bitcorp-erp blue to emphasize GreenOps) */
+  --primary-50: #f0fdfa;
+  --primary-100: #ccfbf1;
+  --primary-300: #5eead4;
+  --primary-500: #0d9488;
+  --primary-600: #0f766e;
+  --primary-700: #115e59;
+  --primary-800: #134e4a;
+  --primary-900: #042f2e;
+
+  /* Accent: warm orange (from bitcorp-erp) */
+  --accent-500: #e37222;
+
+  /* Grey scale (from bitcorp-erp) */
+  --grey-50: #f9fafb;
+  --grey-100: #f6f7f8;
+  --grey-150: #edf0f3;
+  --grey-200: #eaebec;
+  --grey-300: #d4d8da;
+  --grey-400: #9ca3af;
+  --grey-500: #aab0b5;
+  --grey-600: #6b7280;
+  --grey-700: #6a757d;
+  --grey-900: #3f4e58;
+
+  /* Semantic: green/yellow/red (from bitcorp-erp, for RCS badges) */
+  --semantic-green-100: #e8fbe4;
+  --semantic-green-500: #2e7d32;
+  --semantic-yellow-100: #fff9e0;
+  --semantic-yellow-500: #eab308;
+  --semantic-red-100: #ffe0e8;
+  --semantic-red-500: #ef4444;
+
+  /* Neutrals */
+  --neutral-0: #ffffff;
+  --neutral-900: #000000;
+
+  /* Shadows (from bitcorp-erp) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+  /* Radius (from bitcorp-erp) */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--grey-50);
+  color: var(--grey-900);
+  margin: 0;
+}
