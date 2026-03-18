@@ -1,0 +1,10 @@
+{
+  "name": "@pocolente/scanner-greenops",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": { "build": "tsup", "test": "vitest run" },
+  "dependencies": { "@pocolente/core": "workspace:*" }
+}
