@@ -1,1 +1,1 @@
-// @pocolente/scanner-correctness – placeholder
+export { GenerationQualityScanner } from "./generation-quality-scanner.js";
