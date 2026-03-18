@@ -41179,7 +41179,7 @@ function toSarif(findings, toolName, toolVersion) {
           driver: {
             name: toolName,
             version: toolVersion,
-            informationUri: "https://github.com/pocolente/pocolente"
+            informationUri: "https://github.com/pocolente-dev/pocolente-qa"
           }
         },
         results: findings.map((f) => ({

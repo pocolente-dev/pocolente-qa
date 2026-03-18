@@ -2,7 +2,7 @@ import { writeFile, access } from "node:fs/promises";
 import { join } from "node:path";
 
 const DEFAULT_CONFIG = `# Pocolente QA Configuration
-# Docs: https://github.com/pocolente/pocolente
+# Docs: https://github.com/pocolente-dev/pocolente-qa
 version: 1
 
 severity_threshold: warn

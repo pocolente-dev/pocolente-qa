@@ -82,7 +82,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: pocolente/pocolente-qa@v1
+      - uses: pocolente-dev/pocolente-qa@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -211,7 +211,7 @@ Generate with nanobanana:
 Contributions are welcome. To get started:
 
 ```bash
-git clone https://github.com/pocolente/pocolente-qa.git
+git clone https://github.com/pocolente-dev/pocolente-qa.git
 cd pocolente-qa
 pnpm install
 pnpm test

@@ -9,11 +9,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pocolente/pocolente-qa.git",
+    "url": "https://github.com/pocolente-dev/pocolente-qa.git",
     "directory": "packages/core"
   },
   "homepage": "https://pocolente.com",
-  "bugs": { "url": "https://github.com/pocolente/pocolente-qa/issues" },
+  "bugs": { "url": "https://github.com/pocolente-dev/pocolente-qa/issues" },
   "publishConfig": { "access": "public" },
   "scripts": {
     "build": "tsup",

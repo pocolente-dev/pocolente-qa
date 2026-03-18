@@ -5,10 +5,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pocolente/pocolente-qa.git"
+    "url": "https://github.com/pocolente-dev/pocolente-qa.git"
   },
   "homepage": "https://pocolente.com",
-  "bugs": { "url": "https://github.com/pocolente/pocolente-qa/issues" },
+  "bugs": { "url": "https://github.com/pocolente-dev/pocolente-qa/issues" },
   "scripts": {
     "build": "pnpm -r build",
     "test": "vitest",

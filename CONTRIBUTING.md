@@ -5,7 +5,7 @@ Thank you for your interest in contributing! Pocolente QA is an open-source CI/C
 ## Development Setup
 
 ```bash
-git clone https://github.com/pocolente/pocolente-qa.git
+git clone https://github.com/pocolente-dev/pocolente-qa.git
 cd pocolente-qa
 pnpm install
 pnpm build
@@ -53,8 +53,8 @@ This is a pnpm monorepo with packages in `packages/`:
 
 ## Reporting Issues
 
-- **Bugs:** Use the [bug report template](https://github.com/pocolente/pocolente-qa/issues/new?template=bug_report.md)
-- **Features:** Use the [feature request template](https://github.com/pocolente/pocolente-qa/issues/new?template=feature_request.md)
+- **Bugs:** Use the [bug report template](https://github.com/pocolente-dev/pocolente-qa/issues/new?template=bug_report.md)
+- **Features:** Use the [feature request template](https://github.com/pocolente-dev/pocolente-qa/issues/new?template=feature_request.md)
 
 ## Code of Conduct
 
