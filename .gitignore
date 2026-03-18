@@ -3,3 +3,6 @@ dist/
 coverage/
 .pocolente/
 *.tsbuildinfo
+*.db
+*.db-shm
+*.db-wal
