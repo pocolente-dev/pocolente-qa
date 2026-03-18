@@ -39,11 +39,11 @@ describe("parseConfig", () => {
     expect(() => parseConfig({ severity_threshold: "invalid" })).toThrow();
   });
 
-  it("warns on runtime_profiling.enabled = true", () => {
+  it("enables runtime_profiling when set to true", () => {
     const config = parseConfig({ runtime_profiling: { enabled: true } });
-    expect(config.warnings).toContain(
+    expect(config.runtimeProfiling.enabled).toBe(true);
+    expect(config.warnings).not.toContain(
       "Runtime profiling is not yet available. This setting will be ignored."
     );
-    expect(config.runtimeProfiling.enabled).toBe(false);
   });
 });

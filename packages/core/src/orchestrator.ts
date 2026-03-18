@@ -1,6 +1,24 @@
 import type { ScanContext, ScannerResult, Finding } from "./types.js";
 import type { Scanner } from "./scanner.js";
 
+function matchGlob(filePath: string, pattern: string): boolean {
+  if (pattern === "**") return true;
+  if (pattern.startsWith("**/")) {
+    const suffix = pattern.slice(3);
+    if (suffix.includes("*")) {
+      // e.g., **/*.test.* → check if filename contains .test.
+      const parts = suffix.split("*");
+      return parts.every(part => part === "" || filePath.includes(part));
+    }
+    return filePath.includes(suffix);
+  }
+  if (pattern.endsWith("/**")) {
+    const prefix = pattern.slice(0, -3);
+    return filePath.startsWith(prefix + "/") || filePath === prefix;
+  }
+  return filePath === pattern || filePath.startsWith(pattern.replace("**", ""));
+}
+
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
   const timeoutPromise = new Promise<never>((_, reject) => {
     const timer = setTimeout(() => {
@@ -76,5 +94,15 @@ export async function runScanners(
   options?: { timeoutMs?: number },
 ): Promise<ScannerResult[]> {
   const timeoutMs = options?.timeoutMs ?? 15_000;
-  return Promise.all(scanners.map((scanner) => runSingleScanner(scanner, context, timeoutMs)));
+
+  // Pre-filter diff by scan paths
+  const config = context.config;
+  const filteredDiff = context.diff.filter(file => {
+    const matchesInclude = config.scanPaths.include.some(pattern => matchGlob(file.path, pattern));
+    const matchesExclude = config.scanPaths.exclude.some(pattern => matchGlob(file.path, pattern));
+    return matchesInclude && !matchesExclude;
+  });
+  const filteredContext = { ...context, diff: filteredDiff };
+
+  return Promise.all(scanners.map((scanner) => runSingleScanner(scanner, filteredContext, timeoutMs)));
 }

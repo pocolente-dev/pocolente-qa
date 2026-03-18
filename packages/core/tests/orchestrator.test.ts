@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { Scanner, Finding, ScanContext } from "../src/index.js";
+import type { Scanner, Finding, ScanContext, DiffFile } from "../src/index.js";
 import { parseConfig } from "../src/index.js";
 import { runScanners } from "../src/orchestrator.js";
 
@@ -106,6 +106,37 @@ describe("runScanners", () => {
     expect(goodResult).toBeDefined();
     expect(goodResult!.findings).toEqual([goodFinding]);
     expect(goodResult!.error).toBeNull();
+  });
+
+  it("pre-filters diff files by scan paths", async () => {
+    const scanner: Scanner = {
+      id: "counter", name: "Counter", layer: "security",
+      scan: async (ctx) => {
+        // Return one finding per diff file to count how many files were passed
+        return ctx.diff.map(f => makeFinding({ file: f.path }));
+      },
+    };
+
+    const config = parseConfig({
+      scan_paths: { include: ["src/**"], exclude: ["**/*.test.*"] },
+    });
+
+    const context = {
+      diff: [
+        { path: "src/app.ts", added: ["x"], removed: [], patch: "" } as DiffFile,
+        { path: "src/app.test.ts", added: ["x"], removed: [], patch: "" } as DiffFile,
+        { path: "docs/readme.md", added: ["x"], removed: [], patch: "" } as DiffFile,
+      ],
+      config,
+      repoRoot: "/tmp",
+      baseBranch: "main",
+      prBranch: "feature",
+    };
+
+    const results = await runScanners([scanner], context);
+    // Only src/app.ts should pass (src/app.test.ts excluded, docs/readme.md not in include)
+    expect(results[0].findings).toHaveLength(1);
+    expect(results[0].findings[0].file).toBe("src/app.ts");
   });
 
   it("enforces timeout and produces an info finding for timed-out scanners", async () => {
