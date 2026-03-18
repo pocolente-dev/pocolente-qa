@@ -247,14 +247,7 @@ function parseConfigFromParsed(
 ): PocolenteConfig {
   const warnings: string[] = [];
 
-  // Runtime profiling guard
-  let runtimeProfilingEnabled = parsed.runtime_profiling.enabled;
-  if (runtimeProfilingEnabled) {
-    warnings.push(
-      "Runtime profiling is not yet available. This setting will be ignored."
-    );
-    runtimeProfilingEnabled = false;
-  }
+  const runtimeProfilingEnabled = parsed.runtime_profiling.enabled;
 
   return {
     version: parsed.version,
