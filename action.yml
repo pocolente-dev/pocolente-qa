@@ -1,0 +1,26 @@
+name: "Pocolente QA"
+author: "Mohammad Asjad"
+description: "CI/CD quality gate: correctness, security, and energy efficiency scanning"
+branding:
+  icon: "eye"
+  color: "green"
+
+inputs:
+  github-token:
+    description: "GitHub token for posting comments and setting status"
+    required: true
+    default: ${{ github.token }}
+  config-path:
+    description: "Path to .pocolente.yml config file"
+    required: false
+    default: ".pocolente.yml"
+
+outputs:
+  status:
+    description: "Scan result: 'pass' or 'block'"
+  finding-count:
+    description: "Total number of findings"
+
+runs:
+  using: "node20"
+  main: "packages/github-action/dist/index.js"
