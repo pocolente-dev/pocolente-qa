@@ -4,7 +4,15 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
-  "scripts": { "build": "tsup", "test": "vitest run" },
-  "dependencies": { "@pocolente/core": "workspace:*" }
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@pocolente/core": "workspace:*",
+    "fastest-levenshtein": "^1.0.16"
+  }
 }
